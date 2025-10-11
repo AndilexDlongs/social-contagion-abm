@@ -61,6 +61,16 @@ build/Release
 node_modules/
 jspm_packages/
 
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Output files
+results/
+*.csv
+*.png
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 

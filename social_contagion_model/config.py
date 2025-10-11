@@ -1,0 +1,7 @@
+N_AGENTS = 5
+GRID_WIDTH = 3
+GRID_HEIGHT = 3
+STEPS = 20
+MAJORITY_PARTY = "Conservatism"
+UND_RATIO = 0.1
+SEED_STRATEGY = "fixed_split"
