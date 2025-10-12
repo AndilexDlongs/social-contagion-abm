@@ -1,6 +1,6 @@
 from mesa.visualization import SolaraViz, SpaceRenderer
 from model import Environment
-from config import N_AGENTS, GRID_WIDTH, GRID_HEIGHT, STEPS, MAJORITY_PARTY, UND_RATIO, SEED_STRATEGY
+from config import N_AGENTS, GRID_WIDTH, GRID_HEIGHT, MAJORITY_PARTY, UND_RATIO, SEED_STRATEGY
 from mesa.visualization.components import AgentPortrayalStyle
 
 
@@ -27,15 +27,19 @@ social_contagion = Environment(
 model_params = {
     "n": {
         "type": "SliderInt",
-        "value": 5,
+        "value": N_AGENTS,
         "label": "Number of agents:",
         "min": 3,
-        "max": 6,
+        "max": 50,
         "step": 1,
     },
-    "width": 3,
-    "height": 3
+    "width": GRID_WIDTH,
+    "height": GRID_HEIGHT,
+    "seeding_strategy": SEED_STRATEGY,
+    "undecided_ratio": UND_RATIO,
+    "majority_party": MAJORITY_PARTY,
 }
+
 
 renderer = SpaceRenderer(model=social_contagion, backend="matplotlib")
 renderer.draw_structure(lw=2, ls="solid", color="black", alpha=0.1)

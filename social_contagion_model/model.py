@@ -17,7 +17,7 @@ class Environment(mesa.Model):
     def __init__(self, n=5, width=3, height=3, seed=None,
                 seeding_strategy="fixed_split", 
                 undecided_ratio=0.1, 
-                majority_party=None):
+                majority_party="Conservatism"):
     
         super().__init__()
         self.seed = seed
