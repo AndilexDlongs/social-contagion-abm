@@ -58,7 +58,7 @@ def plot_belief_scatter_2d(env, save=False, stage="final"):
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
-    axes[0].scatter(X, Y, c=colours, s=50, alpha=0.7)
+    axes[0].scatter(X, Y, c=colours, s=50, alpha=0.7) # what does s and alpha mean
     axes[0].set(xlabel="Law & Order", ylabel="Economic Equality",
                 title=f"L&O vs EconEq ({stage.title()})")
 
@@ -75,7 +75,7 @@ def plot_belief_scatter_2d(env, save=False, stage="final"):
 
     plt.tight_layout()
     if save:
-        plt.savefig(f"results/plots/belief_scatter_2d_{stage.lower()}.png", dpi=300)
+        plt.savefig(f"results/plots/belief_scatter_2d_{stage.lower()}.png", dpi=300) # whats dpi
     plt.show()
 
 

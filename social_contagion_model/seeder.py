@@ -58,7 +58,7 @@ class Seeder:
 
         for _ in range(num_decided):
             party = np.random.choice(self.parties)
-            vec = party.center_vector() + np.random.normal(0, 10, size=len(party.center_vector()))  # adjust spread
+            vec = party.center_vector() + np.random.normal(0, 100, size=len(party.center_vector()))  # adjust spread
             agents.append((vec, party.name))
 
         # Undecided (sampled until they are NOT in any party radius)
@@ -72,7 +72,7 @@ class Seeder:
 
         while len(agents) < num_agents:
             party = np.random.choice(self.parties)
-            vec = party.center_vector() + np.random.normal(0, 10, size=len(party.center_vector()))
+            vec = party.center_vector() + np.random.normal(0, 100, size=len(party.center_vector()))
             agents.append((vec, party.name))
                 
         return agents

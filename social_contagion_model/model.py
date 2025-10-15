@@ -25,9 +25,12 @@ class Environment(mesa.Model):
         self.grid = OrthogonalMooreGrid(
             (width, height), 
             torus=True, 
-            capacity=40, 
+            capacity=100, 
             random=self.random
         )
+
+        # visualization helper
+        self.steps = 0
 
         # Attributes
         self.attribute_names = ["LawAndOrder", "EconomicEquality", "SocialWelfare"]
@@ -42,9 +45,9 @@ class Environment(mesa.Model):
 
         # Parties
         self.parties = [
-            Party("Conservatism", LawAndOrder=80, EconomicEquality=20, SocialWelfare=40, radius=25),
-            Party("Socialism",    LawAndOrder=30, EconomicEquality=80, SocialWelfare=70, radius=25),
-            Party("Liberalism",   LawAndOrder=50, EconomicEquality=50, SocialWelfare=80, radius=25),
+            Party("Conservatism", LawAndOrder=80, EconomicEquality=20, SocialWelfare=40, radius=30),
+            Party("Socialism",    LawAndOrder=30, EconomicEquality=80, SocialWelfare=70, radius=30),
+            Party("Liberalism",   LawAndOrder=50, EconomicEquality=50, SocialWelfare=80, radius=30),
         ]
 
         # --------------------------
@@ -69,9 +72,11 @@ class Environment(mesa.Model):
             # Recompute party affiliation and distance using agent’s logic
             if affiliation == "Undecided":
                 agent.party_affiliation, undecided_distance = agent.assign_party()
+                agent.original_party_affiliation = agent.party_affiliation
                 agent.distance = undecided_distance
             else:
                 agent.party_affiliation = affiliation
+                agent.original_party_affiliation = agent.party_affiliation
                 agent.distance = agent.party_distance()
 
             # attributes
@@ -108,10 +113,10 @@ class Environment(mesa.Model):
             },
         )
 
+        
         self.datacollector.collect(self)
         self.evaluate_majority_party()
         
-
         for a in self.agents:
             a.update_affiliation_and_support()
 
@@ -142,11 +147,12 @@ class Environment(mesa.Model):
     def step(self):
         """ Advance the model by one step. """
         self.agents.shuffle_do("move")
-        self.agents.shuffle_do("perceive_environment")
+        # self.agents.shuffle_do("perceive_environment")
         self.agents.shuffle_do("interact")
         self.aggregate_environment_state()
         self.datacollector.collect(self)
         self.agents.shuffle_do("reset")
+        self.steps += 1
 
     # def media_campaign(self, bias):
     #    """ Conduct a media campaign with a specific bias. """

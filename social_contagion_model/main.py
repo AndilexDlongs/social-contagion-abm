@@ -21,10 +21,15 @@ def main():
     plot_belief_scatter_2d(env, save=True, stage="initial")
     plot_belief_scatter_3d(env, save=True, stage="initial")
 
+    display_df = env.datacollector.get_agent_vars_dataframe()
+    avg_susc = display_df.groupby("party")["susceptibility"].mean()  # this is a float
+    print("Average susceptibility:", avg_susc)
+
+
     # Run simulation steps
     for _ in range(STEPS):
         env.step()
-        if _ == 9 or _ == 18:  # Evaluate majority party at specific steps
+        if _ == 48 or _ == 98:  # Evaluate majority party at specific steps
             env.evaluate_majority_party()
 
     # Collect and save data
@@ -41,11 +46,26 @@ def main():
     
     agent_attributes = agent_df[["distance_from_party", "susceptibility", "party", "belief_vector", "wealth"]]
     agent_attributes.to_csv("results/csv/agent_attributes.csv")
+    
+    display_df2 = env.datacollector.get_agent_vars_dataframe()
+    avg_susc_after = display_df2.groupby("party")["susceptibility"].mean()
+    print("Average susceptibility after:", avg_susc_after)
 
-     # --- After simulation ---
+    # agent_df.to_csv("results/csv/agent_full_data.csv")
+    agent_df.to_csv("results/csv/agent_full_data.csv")
+
+
+    #print("\nFinal Belief Vectors by Agent:")
+    #for agent_id, row in agent_df.iterrows():
+    #    print(f"Agent {agent_id}: {row['belief_vector']}")
+
+
+    # --- After simulation ---
     plot_initial_party_affiliations(env, save=True, stage="final")
     plot_belief_scatter_2d(env, save=True, stage="final")
     plot_belief_scatter_3d(env, save=True, stage="final")
+
+
 
 if __name__ == "__main__":
     main()
