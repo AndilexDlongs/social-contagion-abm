@@ -201,6 +201,7 @@ class VoterAgent(CellAgent):
     def move(self):
         """ Move to a random neighboring cell. """    
         self.cell = self.cell.neighborhood.select_random_cell()
+        
 
     # ---------------------------
     # Belief Interaction Rules
@@ -341,14 +342,14 @@ class VoterAgent(CellAgent):
             return reflected
         
         ## making sure that when families interact, a ripple ##
-        # if hasattr(self, "family") and hasattr(other, "family"):
-        #     if self.family == other.family:
-        #         # Skip ripple triggers if family interaction
-        #         family_interaction = True
-        #     else:
-        #         family_interaction = False
-        # else:
-        #     family_interaction = False
+        if hasattr(self, "family") and hasattr(other, "family"):
+            if self.family == other.family:
+                # Skip ripple triggers if family interaction
+                family_interaction = True
+            else:
+                family_interaction = False
+        else:
+            family_interaction = False
 
 
         rule = self.choose_rule(other)
@@ -367,42 +368,42 @@ class VoterAgent(CellAgent):
         self.update_affiliation_and_support(old_party=self.party_affiliation)
         other.update_affiliation_and_support(old_party=other.party_affiliation)
 
-                        # --- Family ripple trigger ---
-        # if not family_interaction:
-        #     if hasattr(self, "family") and self.family:
-        #         self.family.ripple_influence(self, old_self, new_self)
-        #     if hasattr(other, "family") and other.family:
-        #         other.family.ripple_influence(other, old_other, new_other)
+        # --- Family ripple trigger ---
+        if not family_interaction:
+            if hasattr(self, "family") and self.family:
+                self.family.ripple_influence(self, old_self, new_self)
+            if hasattr(other, "family") and other.family:
+                other.family.ripple_influence(other, old_other, new_other)
 
     
     # ---------------------------
     # Environment Interaction Rules
     # ---------------------------
-    def maybe_join_nearest_party(self, distance_threshold=20, join_prob=0.8):
-        """Undecided agent may join a nearby party if close enough."""
-        if self.party_affiliation != "Undecided":
-            return  # Only applies to undecided agents
+    # def maybe_join_nearest_party(self, distance_threshold=20, join_prob=0.8):
+    #     """Undecided agent may join a nearby party if close enough."""
+    #     if self.party_affiliation != "Undecided":
+    #         return  # Only applies to undecided agents
 
-        nearest_party = None
-        nearest_distance = float("inf")
+    #     nearest_party = None
+    #     nearest_distance = float("inf")
 
-        # Find nearest party
-        for p in self.model.parties:
-            d = np.linalg.norm(self.belief_vector() - p.center_vector())
-            if d < nearest_distance:
-                nearest_distance = d
-                nearest_party = p
+    #     # Find nearest party
+    #     for p in self.model.parties:
+    #         d = np.linalg.norm(self.belief_vector() - p.center_vector())
+    #         if d < nearest_distance:
+    #             nearest_distance = d
+    #             nearest_party = p
 
-        # Only consider joining if within threshold
-        if nearest_distance <= distance_threshold:
-            if np.random.random() < join_prob:
-                # Move slightly toward that party center
-                new_self = self.belief_vector()  + self.susceptibility * (
-                   nearest_party.center_vector() - self.belief_vector()
-                )
-                self.update_from_vector(self.reflect(new_self))  # use reflection
-                self.party_affiliation = nearest_party.name
-                self.distance = self.party_distance()
+    #     # Only consider joining if within threshold
+    #     if nearest_distance <= distance_threshold:
+    #         if np.random.random() < join_prob:
+    #             # Move slightly toward that party center
+    #             new_self = self.belief_vector()  + self.susceptibility * (
+    #                nearest_party.center_vector() - self.belief_vector()
+    #             )
+    #             self.update_from_vector(self.reflect(new_self))  # use reflection
+    #             self.party_affiliation = nearest_party.name
+    #             self.distance = self.party_distance()
 
 
     def other_party_distance(self, vec):
@@ -508,33 +509,57 @@ class VoterAgent(CellAgent):
             other.interacted_with = int(self.unique_id)
 
         if self.party_affiliation == "Undecided":
-            self.maybe_join_nearest_party()
+            self.force_vote()
 
-    # def force_vote(self):
-    #     current_party = self.party_affiliation
+    def force_vote(self, turnout_prob=0.6, loyalty_radius=35):
+        """Encourage undecided agents to make a final choice based on history and proximity."""
+        
+        if self.party_affiliation != "Undecided":
+            return  # Only applies to undecided agents
 
-    #     if self.susceptibility < 0.1 and current_party == "Undecided":
-    #         original_party = self.original_party_affiliation
+        # --------------------------
+        # Case 1: No prior affiliation
+        # --------------------------
+        original = self.original_party_affiliation
+        if original == "Undecided":
+            nearest_distance, nearest_party = self.distance_from_nearest_party()
 
-    #         if original_party != "Undecided" and np.random.random < 0.5: # get out to vote percentage
-    #             distance_from_original_party = self.original_party_distance()
-    #             nearest_distance, nearest_party = self.distance_from_nearest_party() 
+            # Only act if they decide to vote
+            if np.random.random() < turnout_prob and nearest_party and nearest_distance < loyalty_radius:
+                self.party_affiliation = nearest_party.name
 
-    #             if distance_from_original_party < 30 and np.random.random < 0.8: 
-    #                 self.party_affiliation = self.original_party_affiliation
-    #             else: 
-    #                 self
-    #             # calculate nearest party and compare
-    #         else:
-    #             pass # nearest party 
-    #     elif current_party == "Undecided":
-    #         original_party = self.original_party_affiliation
-    
-    #         if original_party != "Undecided" and np.random.random < 0.8: # must be grearer than agents that are low
-    #             pass # hear you are more inclined to vote nearest
+            # Move slightly toward nearest party (if exists)
+            if nearest_party is not None:
+                new_vec = self.belief_vector() + self.susceptibility * (
+                    nearest_party.center_vector() - self.belief_vector()
+                )
+                self.update_from_vector(np.clip(new_vec, 0, 100))
+                self.update_affiliation_and_support(old_party=self.party_affiliation)
+            else:
+                # fallback: just reinforce current beliefs
+                self.update_from_vector(np.clip(self.belief_vector(), 0, 100))
+                self.update_affiliation_and_support(old_party=self.party_affiliation)
 
-    def perceive_environment(self):
-       self.perceive_economy()
+            return
+
+        # --------------------------
+        # Case 2: Had an original party
+        # --------------------------
+        if np.random.random() < turnout_prob:
+            dist_from_orig = self.original_party_distance()
+            nearest_distance, nearest_party = self.distance_from_nearest_party()
+
+            # More loyal voters rejoin their old party
+            if dist_from_orig < loyalty_radius or np.random.random() < 0.7:
+                self.party_affiliation = original
+            elif nearest_party is not None:
+                # Otherwise join the nearest viable party
+                self.party_affiliation = nearest_party.name
+
+        # Update internal distance
+        self.distance = self.party_distance()
+
+
 
     def reset(self):
         """Reset interaction flag for this agent."""

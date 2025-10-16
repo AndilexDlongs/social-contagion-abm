@@ -2,6 +2,6 @@ N_AGENTS = 100
 GRID_WIDTH = 30
 GRID_HEIGHT = 30
 STEPS = 100
-MAJORITY_PARTY = "Conservatism"
+MAJORITY_PARTY = "Liberalism"
 UND_RATIO = 0.1
 SEED_STRATEGY = "fixed_split"

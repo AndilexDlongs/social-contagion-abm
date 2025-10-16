@@ -29,6 +29,13 @@ def main():
     # Run simulation steps
     for _ in range(STEPS):
         env.step()
+
+    # Trigger late-stage force voting (e.g., last 10% of steps)
+    if _ > int(0.9 * STEPS):
+        for agent in env.agents:
+            agent.force_vote(turnout_prob=0.6, loyalty_radius=35)
+
+
         if _ == 48 or _ == 98:  # Evaluate majority party at specific steps
             env.evaluate_majority_party()
 
