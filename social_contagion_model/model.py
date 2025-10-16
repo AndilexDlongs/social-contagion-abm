@@ -194,8 +194,18 @@ class Environment(mesa.Model):
     def step(self):
         """ Advance the model by one step. """
         self.agents.shuffle_do("move")
+        self.agents.shuffle_do("perceive_health_status")
+        self.agents.shuffle_do("perceive_healthcare")
         self.agents.shuffle_do("interact")
         self.aggregate_environment_state()
+
+        # Remove dead agents
+        dead = [a for a in self.agents if not a.alive]
+        for d in dead:
+            if d.cell and d in d.cell.agents:
+                d.cell.agents.remove(d)
+            self.agents.remove(d)
+
         self.datacollector.collect(self)
         self.agents.shuffle_do("reset")
         self.steps += 1

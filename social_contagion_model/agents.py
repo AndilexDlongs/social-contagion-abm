@@ -102,6 +102,8 @@ class VoterAgent(CellAgent):
         self.significant_difference = 50  # threshold for significant distance
         self.education = "Primary"  # Example additional attribute
         self.health_care = "Public"  # Example additional attribute
+        self.healthy = True
+        self.alive = True
         self.cell = cell
 
         if(self.model.majority_party == self.party_affiliation):
@@ -469,8 +471,30 @@ class VoterAgent(CellAgent):
         self.adjust_economic_view()
 
 
-    def perceive_healthcare(self):
-        pass  # Placeholder for future implementation
+    def perceive_health_status(self):
+        """
+        Models random sickness events during simulation.
+        Agents can fall sick based on a small probability each step.
+        """
+        if self.alive and self.healthy:
+            # % chance of getting sick per step (tune this)
+            if self.random.random() < 0.05:
+                self.healthy = False
+
+    def perceive_healthcare(self): 
+        if not self.healthy and self.alive:  # Only act if sick and alive
+            if self.wealth_dissatisfaction <= 0:
+                self.health_care = "Private"
+                self.healthy = True  # More likely to be healthy
+            else:
+                self.health_care = "Public"
+                if self.random.random() < 0.6:
+                    self.healthy = False  # More likely to be sick
+                    self.alive = False  # Agent dies if sick and using public healthcare
+                    if hasattr(self, "family") and self.family:
+                        self.family.react_to_death(self)
+                else:
+                    self.healthy = True
 
 
     def give_wealth(self, other):
