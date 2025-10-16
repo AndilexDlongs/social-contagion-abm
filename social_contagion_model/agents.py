@@ -38,6 +38,38 @@ class FamilyAgent:
                 member.update_from_vector(np.clip(adj_vec, 0, 100))
                 member.update_affiliation_and_support(old_party=member.party_affiliation)
 
+    def react_to_death(self, deceased_member):
+        deceased_party = deceased_member.party_affiliation
+
+        for member in self.members:
+            if member.alive:
+                # Emotional/economic reaction
+                member.wealth_dissatisfaction += 2
+                member.in_support = False
+                member.switched_in_rebellion = True
+
+                # Find the party center of the deceased
+                deceased_party_center = None
+                for p in self.model.parties:
+                    if p.name == deceased_party:
+                        deceased_party_center = p.center_vector()
+                        break
+
+                # If found, move away from that party center
+                if deceased_party_center is not None:
+                    # Vector pointing *away* from the deceased's party ideology
+                    direction_away = member.belief_vector() - deceased_party_center
+
+                    # Normalize direction (unit vector)
+                    if np.linalg.norm(direction_away) > 0:
+                        direction_away = direction_away / np.linalg.norm(direction_away)
+
+                    # Move slightly in that direction (e.g., 5 units away)
+                    new_vec = member.belief_vector() + direction_away * 5 * member.susceptibility
+                    member.update_from_vector(np.clip(new_vec, 0, 100))
+                    member.update_affiliation_and_support(old_party=member.party_affiliation)
+
+
 class VoterAgent(CellAgent): 
     """ Voter agent with attributes and a party preference. """
 
@@ -62,9 +94,9 @@ class VoterAgent(CellAgent):
         self.has_interacted = False
         self.interacted_with = None
         self.in_support = False
-        self.wealth = 1
+        self.wealth = None
         self.wealth_dissatisfaction = 0 # track the economic dissatisfaction of the agent and can be totalled for the model
-        self.dissatisfation_threshold = 4  # threshold for economic dissatisfaction
+        self.dissatisfaction_threshold = 4  # threshold for economic dissatisfaction
         self.satisfaction_threshold = -8  # threshold for economic satisfaction
         self.dissatisfaction_multiplier = 5  # multiplier for dissatisfaction increase
         self.significant_difference = 50  # threshold for significant distance
@@ -308,8 +340,21 @@ class VoterAgent(CellAgent):
                 reflected[i] = val
             return reflected
         
+        ## making sure that when families interact, a ripple ##
+        # if hasattr(self, "family") and hasattr(other, "family"):
+        #     if self.family == other.family:
+        #         # Skip ripple triggers if family interaction
+        #         family_interaction = True
+        #     else:
+        #         family_interaction = False
+        # else:
+        #     family_interaction = False
+
+
         rule = self.choose_rule(other)
         new_self, new_other = self.interaction_rules[rule](self, other) # what's happening here?
+        old_self = self.belief_vector().copy()
+        old_other = other.belief_vector().copy()
 
         # Update beliefs (clamp between 0–100)
         #self.update_from_vector(np.clip(new_self, 0, 100))
@@ -321,6 +366,13 @@ class VoterAgent(CellAgent):
         # Update party affiliation
         self.update_affiliation_and_support(old_party=self.party_affiliation)
         other.update_affiliation_and_support(old_party=other.party_affiliation)
+
+                        # --- Family ripple trigger ---
+        # if not family_interaction:
+        #     if hasattr(self, "family") and self.family:
+        #         self.family.ripple_influence(self, old_self, new_self)
+        #     if hasattr(other, "family") and other.family:
+        #         other.family.ripple_influence(other, old_other, new_other)
 
     
     # ---------------------------
@@ -357,7 +409,7 @@ class VoterAgent(CellAgent):
         return np.linalg.norm(vec - self.belief_vector())
     
     def move_closer_to_other_party_vector(self):
-        shortest_distance = 200
+        shortest_distance = 500
         for p in self.model.parties:
             party_distance = self.other_party_distance(p.center_vector())
             if p.name != self.party_affiliation and party_distance < shortest_distance:
@@ -385,52 +437,36 @@ class VoterAgent(CellAgent):
     # ---------------------------
 
     def adjust_economic_view(self):
-        if self.wealth_dissatisfaction > self.dissatisfation_threshold:
+        """Adjust ideological position when dissatisfaction thresholds are reached."""
+        if self.wealth_dissatisfaction > self.dissatisfaction_threshold:
+            # Too dissatisfied → shift away from own or majority party
             if self.model.majority_party == self.party_affiliation:
                 new_self = self.move_closer_to_other_party_vector()
-                self.update_from_vector(np.clip(new_self, 0, 100))
-                self.update_affiliation_and_support(old_party=self.party_affiliation)
-            else: 
+            else:
                 new_self = self.move_closer_to_own_party_vector()
-                self.update_from_vector(np.clip(new_self, 0, 100))
-                self.update_affiliation_and_support(old_party=self.party_affiliation)
-
-            self.wealth_dissatisfaction = 0  # reset dissatisfaction after adjustment
-        elif self.wealth_dissatisfaction < self.satisfaction_threshold:
-            if self.model.majority_party == self.party_affiliation:
-                new_self = self.move_closer_to_own_party_vector()
-                self.update_from_vector(np.clip(new_self, 0, 100))
-                self.update_affiliation_and_support(old_party=self.party_affiliation)
-            else: 
-                new_self = self.move_closer_to_majority_party_vector()
-                self.update_from_vector(np.clip(new_self, 0, 100))
-                self.update_affiliation_and_support(old_party=self.party_affiliation)
-                
-            self.wealth_dissatisfaction = 0  # reset dissatisfaction after adjustment
-
-    def compare_wealth(self,other): # later gonna have to make changes based off of disatisfaction level
-        if (self.wealth + self.significant_difference < other.wealth) and (self.model.majority_party == self.party_affiliation): # move closer to other party
-            new_self = self.move_closer_to_other_party_vector()
             self.update_from_vector(np.clip(new_self, 0, 100))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
-        elif(self.wealth + self.significant_difference > other.wealth) and (self.model.majority_party == self.party_affiliation): # move closer to own party
+            self.wealth_dissatisfaction = 0
+
+        elif self.wealth_dissatisfaction < self.satisfaction_threshold:
+            # Very satisfied → reinforce beliefs
             new_self = self.move_closer_to_own_party_vector()
             self.update_from_vector(np.clip(new_self, 0, 100))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
-        elif(self.wealth + self.significant_difference > other.wealth) and (self.model.majority_party != self.party_affiliation): # move closer to majority party
-            new_self = self.move_closer_to_majority_party_vector()
-            self.update_from_vector(np.clip(new_self, 0, 100))
-            self.update_affiliation_and_support(old_party=self.party_affiliation)
-        
-    def perceive_economy(self):
-        average_wealth = self.model.state["average_wealth"]
+            self.wealth_dissatisfaction = 0
 
-        if average_wealth > self.wealth:
+    def compare_wealth(self, other):
+        wealth_gap = other.wealth - self.wealth
+
+        # Emotional response (accumulate dissatisfaction)
+        if wealth_gap > self.significant_difference:
             self.wealth_dissatisfaction += 1
-            self.adjust_economic_view()
-        else:
+        elif wealth_gap < -self.significant_difference:
             self.wealth_dissatisfaction -= 1
-            self.adjust_economic_view()
+
+        # Trigger ideological adjustment if thresholds reached
+        self.adjust_economic_view()
+
 
     def perceive_healthcare(self):
         pass  # Placeholder for future implementation
@@ -463,7 +499,7 @@ class VoterAgent(CellAgent):
             other.evaluate_susceptibility
 
             self.policy_influence(other)
-            # self.give_wealth(other)
+            self.give_wealth(other)
 
             # mark both as having interacted
             self.has_interacted = True
@@ -497,8 +533,8 @@ class VoterAgent(CellAgent):
     #         if original_party != "Undecided" and np.random.random < 0.8: # must be grearer than agents that are low
     #             pass # hear you are more inclined to vote nearest
 
-    #def perceive_environment(self):
-       # self.perceive_economy()
+    def perceive_environment(self):
+       self.perceive_economy()
 
     def reset(self):
         """Reset interaction flag for this agent."""
