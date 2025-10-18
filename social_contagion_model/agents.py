@@ -93,6 +93,7 @@ class VoterAgent(CellAgent):
         self.switch_cause = None # This will be used to track why an agent switched parties
         self.has_interacted = False
         self.interacted_with = None
+        self.interacted_within_party = False
         self.in_support = False
         self.wealth = None
         self.wealth_dissatisfaction = 0 # track the economic dissatisfaction of the agent and can be totalled for the model
@@ -529,6 +530,9 @@ class VoterAgent(CellAgent):
             # mark both as having interacted
             self.has_interacted = True
             self.interacted_with = int(other.unique_id)
+            if self.party_affiliation == other.party_affiliation:
+                self.interacted_within_party = True
+                other.interacted_within_party = True
             other.has_interacted = True
             other.interacted_with = int(self.unique_id)
 
