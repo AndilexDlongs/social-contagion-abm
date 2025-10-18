@@ -1,5 +1,5 @@
 from model import Environment
-from config import N_AGENTS, GRID_WIDTH, GRID_HEIGHT, STEPS, MAJORITY_PARTY, UND_RATIO, SEED_STRATEGY
+from config import N_AGENTS, GRID_WIDTH, GRID_HEIGHT, STEPS, MAJORITY_PARTY, UND_RATIO, SEED_STRATEGY, FAMILY_MULTIPLIER, HEALTHCARE_MULTIPLIER, WEALTH_INFLUENCE_FACTOR, INTERACTION_MULTIPLIER
 import os
 from plots import (
     plot_initial_party_affiliations,
@@ -14,7 +14,13 @@ def main():
         n=N_AGENTS, width=GRID_WIDTH, height=GRID_HEIGHT,
         seeding_strategy=SEED_STRATEGY,
         undecided_ratio=UND_RATIO,
-        majority_party=MAJORITY_PARTY
+        majority_party=MAJORITY_PARTY, 
+        # New multipliers
+        family_multiplier = FAMILY_MULTIPLIER,
+        healthcare_multiplier = HEALTHCARE_MULTIPLIER,
+        wealth_influence_factor = WEALTH_INFLUENCE_FACTOR,
+        interaction_multiplier = INTERACTION_MULTIPLIER
+        
     )
      # --- Before simulation ---
     plot_initial_party_affiliations(env, save=True, stage="initial")
@@ -30,13 +36,9 @@ def main():
     for _ in range(STEPS):
         env.step()
 
-    # Trigger late-stage force voting (e.g., last 10% of steps)
-    if _ > int(0.9 * STEPS):
-        for agent in env.agents:
-            agent.force_vote(turnout_prob=0.6, loyalty_radius=35)
-
-
         if _ == 48 or _ == 98:  # Evaluate majority party at specific steps
+            for agent in env.agents:
+                agent.force_vote()
             env.evaluate_majority_party()
 
     # Collect and save data
