@@ -20,6 +20,8 @@ class FamilyAgent:
     def __init__(self, model, members):
         self.model = model
         self.members = members  # list of VoterAgents
+        self.family_multiplier = model.family_multiplier
+        self.healthcare_multiplier = model.healthcare_multiplier
         for member in members:
             member.family = self
 
@@ -34,41 +36,53 @@ class FamilyAgent:
             prob = np.exp(-0.07 * dist) 
             if np.random.random() < prob:
                 # small movement toward the initiator's shift
-                adj_vec = member.belief_vector() + member.susceptibility * (new_vec - old_vec)
-                member.update_from_vector(np.clip(adj_vec, 0, 100))
+                adj_vec = member.belief_vector() + self.family_multiplier * member.susceptibility * (new_vec - old_vec)
+                member.update_from_vector(self.reflect(adj_vec))
                 member.update_affiliation_and_support(old_party=member.party_affiliation)
 
     def react_to_death(self, deceased_member):
-        deceased_party = deceased_member.party_affiliation
-
+        """
+        When a family member dies, surviving members react emotionally
+        by moving away from the ruling party's ideology (blaming the government).
+        """
         for member in self.members:
             if member.alive:
-                # Emotional/economic reaction
-                member.wealth_dissatisfaction += 2
-                member.in_support = False
-                member.switched_in_rebellion = True
 
-                # Find the party center of the deceased
-                deceased_party_center = None
-                for p in self.model.parties:
-                    if p.name == deceased_party:
-                        deceased_party_center = p.center_vector()
-                        break
+                # If the ruling party is in power
+                ruling_party = self.model.majority_party
 
-                # If found, move away from that party center
-                if deceased_party_center is not None:
-                    # Vector pointing *away* from the deceased's party ideology
-                    direction_away = member.belief_vector() - deceased_party_center
+                # If the member supports the ruling party → move away from it
+                if member.party_affiliation == ruling_party:
+                    new_vec = member.move_closer_to_other_party_vector()
+                    # Amplify the shift using the multiplier
+                    amplified_vec = member.belief_vector() + self.family_multiplier * (new_vec - member.belief_vector())
 
-                    # Normalize direction (unit vector)
-                    if np.linalg.norm(direction_away) > 0:
-                        direction_away = direction_away / np.linalg.norm(direction_away)
+                # If they already oppose the ruling party → reinforce their own stance
+                else:
+                    new_vec = member.move_closer_to_own_party_vector()
+                    amplified_vec = member.belief_vector() + self.healthcare_multiplier * (new_vec - member.belief_vector())
+                # Apply reflection and update
+                member.update_from_vector(member.reflect(amplified_vec))
+                member.update_affiliation_and_support(old_party=member.party_affiliation)
 
-                    # Move slightly in that direction (e.g., 5 units away)
-                    new_vec = member.belief_vector() + direction_away * 5 * member.susceptibility
-                    member.update_from_vector(np.clip(new_vec, 0, 100))
-                    member.update_affiliation_and_support(old_party=member.party_affiliation)
+    @staticmethod
+    def reflect(vec, lower=0, upper=100):
+        """
+        Reflects values in `vec` back into range [lower, upper].
+        Works for scalars or NumPy arrays.
+        """
+        vec = np.asarray(vec, dtype=float)
+        range_size = upper - lower
+        reflected = np.empty_like(vec)
 
+        for i, val in np.ndenumerate(vec):
+            while val < lower or val > upper:
+                if val > upper:
+                    val = upper - (val - upper)
+                elif val < lower:
+                    val = lower + (lower - val)
+            reflected[i] = val
+        return reflected
 
 class VoterAgent(CellAgent): 
     """ Voter agent with attributes and a party preference. """
@@ -105,6 +119,8 @@ class VoterAgent(CellAgent):
         self.health_care = "Public"  # Example additional attribute
         self.healthy = True
         self.alive = True
+        self.wealth_influence_factor = model.wealth_influence_factor
+        self.interaction_multiplier = model.interaction_multiplier
         self.cell = cell
 
         if(self.model.majority_party == self.party_affiliation):
@@ -204,6 +220,25 @@ class VoterAgent(CellAgent):
     def move(self):
         """ Move to a random neighboring cell. """    
         self.cell = self.cell.neighborhood.select_random_cell()
+
+    @staticmethod
+    def reflect(vec, lower=0, upper=100):
+        """
+        Reflects values in `vec` back into range [lower, upper].
+        Works for scalars or NumPy arrays.
+        """
+        vec = np.asarray(vec, dtype=float)
+        range_size = upper - lower
+        reflected = np.empty_like(vec)
+
+        for i, val in np.ndenumerate(vec):
+            while val < lower or val > upper:
+                if val > upper:
+                    val = upper - (val - upper)
+                elif val < lower:
+                    val = lower + (lower - val)
+            reflected[i] = val
+        return reflected
         
 
     # ---------------------------
@@ -211,8 +246,8 @@ class VoterAgent(CellAgent):
     # ---------------------------
 
     def mutual_persuasion(self, other):
-        new_self = self.belief_vector() + self.susceptibility * (other.belief_vector() - self.belief_vector())
-        new_other = other.belief_vector() + other.susceptibility * (self.belief_vector() - other.belief_vector())
+        new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * (other.belief_vector() - self.belief_vector())
+        new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (self.belief_vector() - other.belief_vector())
         return new_self, new_other
 
     def other_convinces_self(self, other):
@@ -220,9 +255,9 @@ class VoterAgent(CellAgent):
         #if old_susc_other > 1.5:
         #    other.susceptibility = other.mid
 
-        new_self = self.belief_vector() + self.susceptibility * (other.belief_vector() - self.belief_vector())
+        new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * (other.belief_vector() - self.belief_vector())
         reinforce = (other.party_center() - other.belief_vector())
-        new_other = other.belief_vector() + other.susceptibility * reinforce
+        new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * reinforce
 
         #other.susceptibility = old_susc_other
         return new_self, new_other
@@ -232,16 +267,16 @@ class VoterAgent(CellAgent):
         #if old_susc_self > 1.5:
         #    self.susceptibility = self.mid
 
-        new_other = other.belief_vector() + other.susceptibility * (self.belief_vector() - other.belief_vector())
+        new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (self.belief_vector() - other.belief_vector())
         reinforce = (self.party_center() - self.belief_vector())
-        new_self = self.belief_vector() + self.susceptibility * reinforce
+        new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * reinforce
 
         #self.susceptibility = old_susc_self
         return new_self, new_other
 
     def disagreement(self, other):  # go closer to own party center
-        new_self = self.belief_vector() + self.susceptibility * (self.party_center() - self.belief_vector())
-        new_other = other.belief_vector() + other.susceptibility * (other.party_center() - other.belief_vector())
+        new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * (self.party_center() - self.belief_vector())
+        new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (other.party_center() - other.belief_vector())
         return new_self, new_other
 
     # overall susceptibilities might have to go lower for stubborn and higher for naive
@@ -331,18 +366,6 @@ class VoterAgent(CellAgent):
     #    self.political_bias = self.political_bias + self.susceptibility * media_bias
 
     def policy_influence(self, other):
-        def reflect(vec, lower=0, upper=100):
-            """Reflects out-of-bound values back into range [lower, upper]."""
-            range_size = upper - lower
-            reflected = np.copy(vec)
-            for i, val in enumerate(reflected):
-                while val < lower or val > upper:
-                    if val > upper:
-                        val = upper - (val - upper)  # reflect downward
-                    elif val < lower:
-                        val = lower + (lower - val)  # reflect upward
-                reflected[i] = val
-            return reflected
         
         ## making sure that when families interact, a ripple ##
         if hasattr(self, "family") and hasattr(other, "family"):
@@ -363,8 +386,8 @@ class VoterAgent(CellAgent):
         # Update beliefs (clamp between 0–100)
         #self.update_from_vector(np.clip(new_self, 0, 100))
         #other.update_from_vector(np.clip(new_other, 0, 100))
-        self.update_from_vector(reflect(new_self))
-        other.update_from_vector(reflect(new_other))
+        self.update_from_vector(self.reflect(new_self))
+        other.update_from_vector(self.reflect(new_other))
 
 
         # Update party affiliation
@@ -382,38 +405,12 @@ class VoterAgent(CellAgent):
     # ---------------------------
     # Environment Interaction Rules
     # ---------------------------
-    # def maybe_join_nearest_party(self, distance_threshold=20, join_prob=0.8):
-    #     """Undecided agent may join a nearby party if close enough."""
-    #     if self.party_affiliation != "Undecided":
-    #         return  # Only applies to undecided agents
-
-    #     nearest_party = None
-    #     nearest_distance = float("inf")
-
-    #     # Find nearest party
-    #     for p in self.model.parties:
-    #         d = np.linalg.norm(self.belief_vector() - p.center_vector())
-    #         if d < nearest_distance:
-    #             nearest_distance = d
-    #             nearest_party = p
-
-    #     # Only consider joining if within threshold
-    #     if nearest_distance <= distance_threshold:
-    #         if np.random.random() < join_prob:
-    #             # Move slightly toward that party center
-    #             new_self = self.belief_vector()  + self.susceptibility * (
-    #                nearest_party.center_vector() - self.belief_vector()
-    #             )
-    #             self.update_from_vector(self.reflect(new_self))  # use reflection
-    #             self.party_affiliation = nearest_party.name
-    #             self.distance = self.party_distance()
-
 
     def other_party_distance(self, vec):
         return np.linalg.norm(vec - self.belief_vector())
     
     def move_closer_to_other_party_vector(self):
-        shortest_distance = 500
+        shortest_distance = 200
         for p in self.model.parties:
             party_distance = self.other_party_distance(p.center_vector())
             if p.name != self.party_affiliation and party_distance < shortest_distance:
@@ -446,16 +443,23 @@ class VoterAgent(CellAgent):
             # Too dissatisfied → shift away from own or majority party
             if self.model.majority_party == self.party_affiliation:
                 new_self = self.move_closer_to_other_party_vector()
+                wealth_effect_new = self.belief_vector() + self.wealth_influence_factor * (new_self - self.belief_vector())
             else:
                 new_self = self.move_closer_to_own_party_vector()
-            self.update_from_vector(np.clip(new_self, 0, 100))
+                wealth_effect_new = self.belief_vector() + self.wealth_influence_factor * (new_self - self.belief_vector())
+            self.update_from_vector(self.reflect(wealth_effect_new))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
             self.wealth_dissatisfaction = 0
 
         elif self.wealth_dissatisfaction < self.satisfaction_threshold:
-            # Very satisfied → reinforce beliefs
-            new_self = self.move_closer_to_own_party_vector()
-            self.update_from_vector(np.clip(new_self, 0, 100))
+            # Very satisfied → go toward majority party since they're controlling the economy
+            if self.model.majority_party == self.party_affiliation:
+                new_self = self.move_closer_to_own_party_vector()
+                wealth_effect_new = self.belief_vector() + self.wealth_influence_factor * (new_self - self.belief_vector())
+            else:
+                new_self = self.move_closer_to_majority_party_vector()
+                wealth_effect_new = self.belief_vector() + self.wealth_influence_factor * (new_self - self.belief_vector())
+            self.update_from_vector(self.reflect(wealth_effect_new))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
             self.wealth_dissatisfaction = 0
 
@@ -536,56 +540,68 @@ class VoterAgent(CellAgent):
             other.has_interacted = True
             other.interacted_with = int(self.unique_id)
 
-        if self.party_affiliation == "Undecided":
-            self.force_vote()
+    def force_vote(self):
+        """Final decision for undecided agents based on susceptibility and history."""
 
-    def force_vote(self, turnout_prob=0.6, loyalty_radius=35):
-        """Encourage undecided agents to make a final choice based on history and proximity."""
-        
+        # Only undecided agents should act
         if self.party_affiliation != "Undecided":
-            return  # Only applies to undecided agents
+            return
 
-        # --------------------------
-        # Case 1: No prior affiliation
-        # --------------------------
         original = self.original_party_affiliation
+
+        # --------------------------
+        # Case 1: Always been undecided
+        # --------------------------
         if original == "Undecided":
-            nearest_distance, nearest_party = self.distance_from_nearest_party()
-
-            # Only act if they decide to vote
-            if np.random.random() < turnout_prob and nearest_party and nearest_distance < loyalty_radius:
-                self.party_affiliation = nearest_party.name
-
-            # Move slightly toward nearest party (if exists)
-            if nearest_party is not None:
-                new_vec = self.belief_vector() + self.susceptibility * (
-                    nearest_party.center_vector() - self.belief_vector()
-                )
-                self.update_from_vector(np.clip(new_vec, 0, 100))
-                self.update_affiliation_and_support(old_party=self.party_affiliation)
+            # 60% chance that this logic happens at all
+            if np.random.random() < 0.6:
+                if self.susceptibility == self.high:
+                    # Naive agents: 80% chance to pick nearest party
+                    if np.random.random() < 0.8:
+                        nearest_distance, nearest_party = self.distance_from_nearest_party()
+                        if nearest_party is not None:
+                            self.party_affiliation = nearest_party.name
+                        else:
+                            self.party_affiliation = "Undecided"
+                    else:
+                        self.party_affiliation = "Undecided"
+                elif self.susceptibility == self.low:
+                    # Stubborn agents: 80% chance to remain undecided
+                    if np.random.random() < 0.8:
+                        self.party_affiliation = "Undecided"
+                    else:
+                        nearest_distance, nearest_party = self.distance_from_nearest_party()
+                        if nearest_party is not None:
+                            self.party_affiliation = nearest_party.name
             else:
-                # fallback: just reinforce current beliefs
-                self.update_from_vector(np.clip(self.belief_vector(), 0, 100))
-                self.update_affiliation_and_support(old_party=self.party_affiliation)
+                # 40% of the time do nothing (remain undecided)
+                self.party_affiliation = "Undecided"
 
             return
 
         # --------------------------
         # Case 2: Had an original party
         # --------------------------
-        if np.random.random() < turnout_prob:
-            dist_from_orig = self.original_party_distance()
-            nearest_distance, nearest_party = self.distance_from_nearest_party()
-
-            # More loyal voters rejoin their old party
-            if dist_from_orig < loyalty_radius or np.random.random() < 0.7:
-                self.party_affiliation = original
-            elif nearest_party is not None:
-                # Otherwise join the nearest viable party
-                self.party_affiliation = nearest_party.name
-
-        # Update internal distance
-        self.distance = self.party_distance()
+        if np.random.random() < 0.8:
+            if self.susceptibility == self.high:
+                # Naive agents: 80% chance to pick nearest party
+                if np.random.random() < 0.8:
+                    nearest_distance, nearest_party = self.distance_from_nearest_party()
+                    if nearest_party is not None:
+                        self.party_affiliation = nearest_party.name
+                    else:
+                        self.party_affiliation = "Undecided"
+                else:
+                    self.party_affiliation = "Undecided"
+            elif self.susceptibility == self.low:
+                # Stubborn agents: 80% chance to go back to their original party
+                if np.random.random() < 0.8:
+                    self.party_affiliation = original
+                else:
+                    self.party_affiliation = "Undecided"
+        else:
+            # 20% of the time do nothing
+            self.party_affiliation = "Undecided"
 
 
 
@@ -603,3 +619,4 @@ class VoterAgent(CellAgent):
                 f"EconEquality: {self.EconomicEquality:.1f}, "
                 f"SocWelfare: {self.SocialWelfare:.1f}, "
                 f"Party: {self.party_affiliation}")
+    

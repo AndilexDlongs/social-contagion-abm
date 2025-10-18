@@ -18,11 +18,19 @@ class Environment(mesa.Model):
     def __init__(self, n=5, width=3, height=3, seed=None,
                 seeding_strategy="fixed_split", 
                 undecided_ratio=0.1, 
-                majority_party="Conservatism"):
-    
+                majority_party="Conservatism", 
+                family_multiplier=1.2,
+                healthcare_multiplier=1.6, 
+                wealth_influence_factor=1, 
+                interaction_multiplier=0.8):
+     
         super().__init__()
         self.seed = seed
         self.num_agents = n
+        self.family_multiplier = family_multiplier
+        self.healthcare_multiplier = healthcare_multiplier
+        self.wealth_influence_factor = wealth_influence_factor
+        self.interaction_multiplier = interaction_multiplier
         self.grid = OrthogonalMooreGrid(
             (width, height), 
             torus=True, 
@@ -93,46 +101,46 @@ class Environment(mesa.Model):
         # FAMILY INITIALIZATION
         # ----------------------------
 
-        # self.family_agents = []
-        # agents_list = list(self.agents)
-        # self.random.shuffle(agents_list)
+        self.family_agents = []
+        agents_list = list(self.agents)
+        self.random.shuffle(agents_list)
 
-        # for i, agent in enumerate(agents_list):
-        #     # Skip if already assigned to a family
-        #     if hasattr(agent, "family") and agent.family:
-        #         continue
+        for i, agent in enumerate(agents_list):
+            # Skip if already assigned to a family
+            if hasattr(agent, "family") and agent.family:
+                continue
 
-        #     family_members = [agent]
+            family_members = [agent]
 
-        #     # Max family size 
-        #     max_size = self.random.randint(3, 10)
+            # Max family size 
+            max_size = self.random.randint(3, 10)
 
-        #     for other in agents_list:
-        #         if other == agent or (hasattr(other, "family") and other.family):
-        #             continue
+            for other in agents_list:
+                if other == agent or (hasattr(other, "family") and other.family):
+                    continue
 
-        #         # Find if this other agent is closer to *another* party center than their own
-        #         own_party_center = agent.party_center()
-        #         distances = {p.name: np.linalg.norm(other.belief_vector() - p.center_vector()) for p in self.parties}
+                # Find if this other agent is closer to *another* party center than their own
+                own_party_center = agent.party_center()
+                distances = {p.name: np.linalg.norm(other.belief_vector() - p.center_vector()) for p in self.parties}
 
-        #         # Check if this agent is near the ideological border
-        #         closest_party = min(distances, key=distances.get)
-        #         if closest_party == agent.party_affiliation and distances[closest_party] < 20 and len(family_members) < 3:
-        #             family_members.append(other)
-        #             other.family = True
-        #         elif len(family_members) < max_size and self.random.random() < 0.2:
-        #             # Add random members to fill out family diversity
-        #             family_members.append(other)
-        #             other.family = True
+                # Check if this agent is near the ideological border
+                closest_party = min(distances, key=distances.get)
+                if closest_party == agent.party_affiliation and distances[closest_party] < 20 and len(family_members) < 3:
+                    family_members.append(other)
+                    other.family = True
+                elif len(family_members) < max_size and self.random.random() < 0.2:
+                    # Add random members to fill out family diversity
+                    family_members.append(other)
+                    other.family = True
 
-        #         if len(family_members) >= max_size:
-        #             break
+                if len(family_members) >= max_size:
+                    break
 
-        #     # Assign the family group
-        #     family = FamilyAgent(self, family_members)
-        #     for m in family_members:
-        #         m.family = family
-        #     self.family_agents.append(family)
+            # Assign the family group
+            family = FamilyAgent(self, family_members)
+            for m in family_members:
+                m.family = family
+            self.family_agents.append(family)
 
 
         self.datacollector = DataCollector(
