@@ -53,8 +53,11 @@ def main():
     dist_party_unstacked.to_csv("results/csv/dist_party_unstacked.csv")
 
     
-    agent_attributes = agent_df[["distance_from_party", "susceptibility", "party", "belief_vector", "wealth"]]
+    agent_attributes = agent_df[["distance_from_party", "susceptibility", "party", "belief_vector", "wealth", "family_id"]]
     agent_attributes.to_csv("results/csv/agent_attributes.csv")
+
+    family_details = agent_df[["family_id", "family_members"]]
+    family_details.to_csv("results/csv/family_details.csv")
     
     display_df2 = env.datacollector.get_agent_vars_dataframe()
     avg_susc_after = display_df2.groupby("party")["susceptibility"].mean()
