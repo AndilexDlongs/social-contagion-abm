@@ -350,7 +350,7 @@ def PartyVotesLinePlot(model):
         ax.set_title(f"Party Vote Counts — Step {model.step_count}")
         ax.legend()
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -410,7 +410,7 @@ def PartyCompositionPlot(model):
         ax.set_ylabel(f"% of Population {step.value}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -463,7 +463,7 @@ def AvgDistancePerPartyPlot(model):
         ax.set_title(f"Average Distance per Party — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -509,7 +509,7 @@ def AvgSusceptibilityPerPartyPlot(model):
         ax.set_title(f"Average Susceptibility per Party — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -569,7 +569,7 @@ def SupportVsRebellionStackPlot(model):
         ax.set_title(f"Support vs Rebellion — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -614,7 +614,7 @@ def DistanceStdOnlyPlot(model):
         ax.set_title(f"Distance Std Dev per Party — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -671,7 +671,7 @@ def FractionOriginalPartyPlot(model):
         ax.set_title(f"Fraction of Original Members — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -722,7 +722,7 @@ def InteractionsWithinVsCrossPlot(model):
         ax.set_title(f"Within vs Cross-Party Interactions — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
@@ -759,7 +759,7 @@ def InteractionTypePlot(model):
         ax.set_title(f"Interaction Types — Step {model.step_count}")
         ax.legend(loc="upper right")
     finally:
-        plt.close(fig)
+        pass
 
     return solara.FigureMatplotlib(fig)
 
