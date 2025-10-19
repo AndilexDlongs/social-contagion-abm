@@ -10,7 +10,7 @@ from utils import (count_Conservatism, count_Liberalism, count_Socialism,
                    count_Undecided, count_in_support, num_interactions,
                    num_switches, num_switches_in_rebellion,
                    num_switches_in_support, vote_counts, num_interactions_in_party,
-                   num_interactions_cross_party,)
+                   num_interactions_cross_party, count_sick_agents)
 
 class Environment(mesa.Model):
     """Environment with agents, parties, and interactions."""
@@ -22,18 +22,18 @@ class Environment(mesa.Model):
                 healthcare_multiplier=1.6, 
                 wealth_influence_factor=1, 
                 interaction_multiplier=0.8,
-                susc_party_focus="Conservatism",
-                susc_focus_value="normal", 
-                susc_other_value="normal",
-                wealth_party_focus="Conservatism",
-                wealth_focus_value="normal",   # “low” | “high” | “normal”
-                wealth_other_value="normal",
                 conservatism_perc=0.4,
                 socialism_perc=0.35,
                 liberalism_perc=0.25,
                 conservatism_std=10,
                 socialism_std=10,
                 liberalism_std=10, 
+                conservatism_susc=0.5, 
+                socialism_susc=0.5,
+                liberalism_susc=0.5,
+                conservatism_wealth=0.5, 
+                socialism_wealth=0.5, 
+                liberalism_wealth=0.5,
                 sickness_chance=0.05,
                 min_family_size=3,
                 max_family_size=10):
@@ -55,16 +55,6 @@ class Environment(mesa.Model):
         # visualization helper
         self.step_count = 0
 
-        self.susc_party_focus = susc_party_focus
-        self.susc_focus_value = susc_focus_value
-        self.susc_other_value = susc_other_value
-
-        self.wealth_party_focus = wealth_party_focus
-        self.wealth_focus_value = wealth_focus_value
-        self.wealth_other_value = wealth_other_value
-
-
-
         # Attributes
         self.attribute_names = ["LawAndOrder", "EconomicEquality", "SocialWelfare"]
         self.belief_dim = len(self.attribute_names)
@@ -75,6 +65,7 @@ class Environment(mesa.Model):
         self.state = { 
             "average_wealth": 0
         }
+        self.death_count = 0
 
         # Parties
         self.parties = [
@@ -109,13 +100,6 @@ class Environment(mesa.Model):
         for data in init_agents:
             agent = VoterAgent(self, cell=None)
             # Pass global susceptibility config so agent logic triggers correctly
-            agent.susc_party_focus = self.susc_party_focus
-            agent.susc_focus_value = self.susc_focus_value
-            agent.susc_other_value = self.susc_other_value
-
-            agent.wealth_party_focus = self.wealth_party_focus
-            agent.wealth_focus_value = self.wealth_focus_value
-            agent.wealth_other_value = self.wealth_other_value
 
             agent.sickness_chance = sickness_chance
             # beliefs + affiliation
@@ -134,7 +118,16 @@ class Environment(mesa.Model):
                 agent.distance = agent.party_distance()
 
             # attributes
-            agent.initialize_wealth()
+            agent.initialize_wealth(
+                conservatism_wealth=conservatism_wealth, 
+                socialism_wealth=socialism_wealth, 
+                liberalism_wealth=liberalism_wealth
+            )
+            agent.initialize_susceptibility(
+                conservatism_susc=conservatism_susc, 
+                socialism_susc=socialism_susc,
+                liberalism_susc=liberalism_susc,
+            )
             # (later) agent.education = data["education"]; agent.health_care = data["healthcare"]
             # grid placement
             cell = self.random.choice(self.grid.all_cells.cells)
@@ -210,6 +203,8 @@ class Environment(mesa.Model):
                 "num_switches_in_support": num_switches_in_support,
                 "num_switches_in_rebellion": num_switches_in_rebellion,
                 "avg_wealth": lambda m: m.state["average_wealth"],
+                "death_count": lambda m: m.death_count,
+                "sickness_count": count_sick_agents
             },
             agent_reporters={
                 "belief_vector": lambda a: a.belief_vector().tolist(),
@@ -276,6 +271,7 @@ class Environment(mesa.Model):
             if d.cell and d in d.cell.agents:
                 d.cell.agents.remove(d)
             self.agents.remove(d)
+            self.death_count += 1
 
         self.datacollector.collect(self)
         self.agents.shuffle_do("reset")

@@ -6,7 +6,7 @@
 N_AGENTS = 1000
 GRID_WIDTH = 50
 GRID_HEIGHT = 50
-STEPS = 100
+STEPS = 1000
 
 # Multipliers (core dynamic factors)
 FAMILY_MULTIPLIER = 1.0
@@ -43,16 +43,14 @@ MAX_FAMILY_SIZE = 10
 # Health and Wealth Factors
 # =======================
 SICKNESS_CHANCE = 0.05        # 5% chance of getting sick per step
-WEALTH_PARTY_FOCUS = "Conservatism"
-WEALTH_FOCUS_VALUE = "normal"  # “low” | “high” | “normal”
-WEALTH_OTHER_VALUE = "normal"
 
-# =======================
-# Susceptibility Setup
-# =======================
-SUSC_PARTY_FOCUS = "Conservatism"
-SUSC_FOCUS_VALUE = "low"    # “low” | “high” | “normal”
-SUSC_OTHER_VALUE = "normal"
+CONSERVATISM_SUSC = 0.5
+SOCIALISM_SUSC = 0.5
+LIBERALISM_SUSC = 0.5
+
+CONSERVATISM_WEALTH = 0.5
+SOCIALISM_WEALTH = 0.5
+LIBERALISM_WEALTH = 0.5
 
 # =======================
 # Random Seed (for reproducibility)

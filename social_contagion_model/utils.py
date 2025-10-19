@@ -65,3 +65,7 @@ def num_interactions_cross_party(model):
         cross = 0
     return cross
 
+def count_sick_agents(model):
+    """Count how many agents are currently sick."""
+    return sum(1 for a in model.agents if getattr(a, "healthy", True) is False)
+
