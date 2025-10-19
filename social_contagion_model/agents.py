@@ -67,7 +67,7 @@ class FamilyAgent:
                 if member.party_affiliation == ruling_party:
                     new_vec = member.move_closer_to_other_party_vector()
                     # Amplify the shift using the multiplier
-                    amplified_vec = member.belief_vector() + self.family_multiplier * (new_vec - member.belief_vector())
+                    amplified_vec = member.belief_vector() + self.healthcare_multiplier * (new_vec - member.belief_vector())
 
                 # If they already oppose the ruling party → reinforce their own stance
                 else:
@@ -639,7 +639,7 @@ class VoterAgent(CellAgent):
 
     def perceive_healthcare(self): 
         if not self.healthy and self.alive:  # Only act if sick and alive
-            if self.wealth_dissatisfaction <= 0:
+            if self.wealth >= 27: # assuming average wealth is around 27
                 self.health_care = "Private"
                 self.healthy = True  # More likely to be healthy
             else:
