@@ -181,7 +181,7 @@ class Environment(mesa.Model):
                     break
 
             # Assign the family group
-            if len(family_members) >= 2:
+            if len(family_members) >= min_family_size:
                 family = FamilyAgent(self, family_members)
                 for m in family_members:
                     m.family = family # Assigns the family object reference to each member.
@@ -222,7 +222,7 @@ class Environment(mesa.Model):
                 "interacted_with": lambda a: a.interacted_with,
                 "interacted_within_party": lambda a: a.interacted_within_party,
                 "wealth": lambda a: a.wealth,
-                "in_support": lambda a: a.in_support
+                "in_support": lambda a: a.in_support,
                 "family_id": lambda a: a.family_id,
                 "family_members": lambda a: a.family_members,
                 "family_size": lambda a: a.family_size
