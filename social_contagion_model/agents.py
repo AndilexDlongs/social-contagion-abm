@@ -17,13 +17,22 @@ class Party:
 
 class FamilyAgent:
     """Group-level agent representing a family unit."""
+    family_counter = 0  # static counter shared across all FamilyAgents
+
     def __init__(self, model, members):
         self.model = model
         self.members = members  # list of VoterAgents
+        self.id = FamilyAgent.family_counter  # unique family number
+        FamilyAgent.family_counter += 1
+
         self.family_multiplier = model.family_multiplier
         self.healthcare_multiplier = model.healthcare_multiplier
+
+        # assign this family to its members
         for member in members:
             member.family = self
+            member.family_id = self.id   
+
 
     def ripple_influence(self, initiator, old_vec, new_vec):
         """Triggered when one family member changes belief significantly."""
@@ -121,6 +130,7 @@ class VoterAgent(CellAgent):
         self.alive = True
         self.wealth_influence_factor = model.wealth_influence_factor
         self.interaction_multiplier = model.interaction_multiplier
+        self.family_id = None
         self.cell = cell
         self.susc_party_focus = "Undecided"
         self.susc_focus_value = None
@@ -129,6 +139,8 @@ class VoterAgent(CellAgent):
         self.wealth_focus_value = None
         self.wealth_other_value = None
         self.sickness_chance = 0.05
+        self.family_members = None
+        self.family_size = None
 
         if(self.model.majority_party == self.party_affiliation):
             self.in_support = True
@@ -217,6 +229,13 @@ class VoterAgent(CellAgent):
     # ---------------------------
     # Helper methods
     # ---------------------------
+    def get_members(self):
+        """Return the IDs of this agent's family members."""
+        if hasattr(self, "family"):
+            return [m.unique_id for m in self.family.members]
+        return []
+
+
     def evaluate_susceptibility(self):
         if self.susceptibility > 0.3:
             if np.random.random() < 0.7:

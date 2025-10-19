@@ -157,7 +157,7 @@ class Environment(mesa.Model):
             family_members = [agent]
 
             # Max family size 
-            max_size = self.random.randint(min_family_size, max_family_size)
+            family_size = self.random.randint(min_family_size, max_family_size)
 
             for other in agents_list:
                 if other == agent or (hasattr(other, "family") and other.family):
@@ -169,22 +169,30 @@ class Environment(mesa.Model):
 
                 # Check if this agent is near the ideological border
                 closest_party = min(distances, key=distances.get)
-                if closest_party == agent.party_affiliation and distances[closest_party] < 20 and len(family_members) < 3:
+                if closest_party == agent.party_affiliation and distances[closest_party] < 20 and len(family_members) < family_size:
                     family_members.append(other)
                     other.family = True
-                elif len(family_members) < max_size and self.random.random() < 0.2:
+                elif len(family_members) < family_size and self.random.random() < 0.2:
                     # Add random members to fill out family diversity
                     family_members.append(other)
                     other.family = True
 
-                if len(family_members) >= max_size:
+                if len(family_members) >= family_size:
                     break
 
             # Assign the family group
-            family = FamilyAgent(self, family_members)
-            for m in family_members:
-                m.family = family
-            self.family_agents.append(family)
+            if len(family_members) >= 2:
+                family = FamilyAgent(self, family_members)
+                for m in family_members:
+                    m.family = family # Assigns the family object reference to each member.
+                self.family_agents.append(family)
+
+
+        for i, agent in enumerate(agents_list):
+            agent.family_members = agent.get_members()
+            agent.family_size = len(agent.family_members) 
+
+         
 
 
         self.datacollector = DataCollector(
@@ -215,6 +223,9 @@ class Environment(mesa.Model):
                 "interacted_within_party": lambda a: a.interacted_within_party,
                 "wealth": lambda a: a.wealth,
                 "in_support": lambda a: a.in_support
+                "family_id": lambda a: a.family_id,
+                "family_members": lambda a: a.family_members,
+                "family_size": lambda a: a.family_size
             },
         )
 

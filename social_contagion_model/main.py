@@ -105,6 +105,9 @@ def main():
     agent_attributes = agent_df[["distance_from_party", "susceptibility", "party", "belief_vector", "wealth"]]
     agent_attributes.to_csv("results/csv/agent_attributes.csv")
 
+    family_details = agent_df[["family_id", "family_members"]]
+    family_details.to_csv("results/csv/family_details.csv")
+    
     display_df2 = env.datacollector.get_agent_vars_dataframe()
     avg_susc_after = display_df2.groupby("party")["susceptibility"].mean()
     print("Average susceptibility after:", avg_susc_after)
