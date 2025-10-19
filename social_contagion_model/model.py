@@ -9,7 +9,8 @@ from seeder import Seeder
 from utils import (count_Conservatism, count_Liberalism, count_Socialism,
                    count_Undecided, count_in_support, num_interactions,
                    num_switches, num_switches_in_rebellion,
-                   num_switches_in_support, vote_counts)
+                   num_switches_in_support, vote_counts, num_interactions_in_party,
+                   num_interactions_cross_party,)
 
 class Environment(mesa.Model):
     """Environment with agents, parties, and interactions."""
@@ -38,7 +39,7 @@ class Environment(mesa.Model):
         )
 
         # visualization helper
-        self.steps = 0
+        self.step_count = 0
 
         # Attributes
         self.attribute_names = ["LawAndOrder", "EconomicEquality", "SocialWelfare"]
@@ -154,6 +155,8 @@ class Environment(mesa.Model):
             model_reporters={
                 "num_switches": num_switches,
                 "num_interactions": num_interactions,
+                "num_interactions_in_party": num_interactions_in_party,
+                "num_interactions_cross_party": num_interactions_cross_party,
                 "vote_Conservatism": count_Conservatism,
                 "vote_Socialism": count_Socialism,
                 "vote_Liberalism": count_Liberalism,
@@ -168,10 +171,12 @@ class Environment(mesa.Model):
                 "belief_vector": lambda a: a.belief_vector().tolist(),
                 "distance_from_party": lambda a: a.distance,
                 "party": lambda a: a.party_affiliation,
+                "original_party": lambda a: a.original_party_affiliation,
                 "susceptibility": lambda a: a.susceptibility,
                 "switched": lambda a: a.switched_this_step,
                 "has_interacted": lambda a: a.has_interacted,
                 "interacted_with": lambda a: a.interacted_with,
+                "interacted_within_party": lambda a: a.interacted_within_party,
                 "wealth": lambda a: a.wealth,
                 "family_id": lambda a: a.family_id,
                 "family_members": lambda a: a.family_members,
@@ -227,7 +232,7 @@ class Environment(mesa.Model):
 
         self.datacollector.collect(self)
         self.agents.shuffle_do("reset")
-        self.steps += 1
+        self.step_count += 1
 
     # def media_campaign(self, bias):
     #    """ Conduct a media campaign with a specific bias. """

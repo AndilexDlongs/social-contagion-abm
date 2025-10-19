@@ -41,3 +41,27 @@ def count_Liberalism(model):
 def count_Undecided(model):
     return vote_count_for(model, "Undecided")
 
+def num_interactions_in_party(model):
+    """
+    Count how many *interactions* occurred between agents of the same party in this step.
+    We assume each interaction sets has_interacted = True on both agents and
+    sets interacted_within_party = True on both if same party.
+    So sum of interacted_within_party across agents, divided by 2 (to avoid double count).
+    """
+    total_within_flags = sum(1 for a in model.agents if getattr(a, "interacted_within_party", False))
+    return total_within_flags // 2  # integer division, each pair counted twice
+
+
+def num_interactions_cross_party(model):
+    """
+    Count how many interactions in this step were cross-party (i.e. between agents of different parties).
+    Cross = total interactions − within.
+    We reuse your num_interactions and subtract within.
+    """
+    total = num_interactions(model)
+    within = num_interactions_in_party(model)
+    cross = total - within
+    if cross < 0:
+        cross = 0
+    return cross
+
