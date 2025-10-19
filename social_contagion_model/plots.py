@@ -1,12 +1,8 @@
-# plots.py
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
 import os
-
-# Ensure results folders exist
-os.makedirs("results/plots", exist_ok=True)
 
 # Shared colour map
 PARTY_COLOURS = {
@@ -20,7 +16,7 @@ PARTY_COLOURS = {
 # EXISTING FUNCTIONS BELOW
 # --------------------------------------------------------------------
 
-def plot_initial_party_affiliations(env, save=False, stage="final"):
+def plot_initial_party_affiliations(env, save=False, stage="final", folder="results/plots"):
     votes = [a.party_affiliation for a in env.agents]
     counts = pd.Series(votes).value_counts().sort_index()
 
@@ -39,12 +35,15 @@ def plot_initial_party_affiliations(env, save=False, stage="final"):
     )
     plt.tight_layout()
 
+    # Ensure the folder exists
+    os.makedirs(folder, exist_ok=True)
+
     if save:
-        plt.savefig(f"results/plots/party_affiliations_{stage.lower()}.png", dpi=300)
+        plt.savefig(f"{folder}/party_affiliations_{stage.lower()}.png", dpi=300)
     plt.show()
 
 
-def plot_belief_scatter_2d(env, save=False, stage="final"):
+def plot_belief_scatter_2d(env, save=False, stage="final", folder="results/plots"):
     X = [a.LawAndOrder for a in env.agents]
     Y = [a.EconomicEquality for a in env.agents]
     Z = [a.SocialWelfare for a in env.agents]
@@ -68,12 +67,16 @@ def plot_belief_scatter_2d(env, save=False, stage="final"):
         ax.grid(True)
 
     plt.tight_layout()
+
+    # Ensure the folder exists
+    os.makedirs(folder, exist_ok=True)
+
     if save:
-        plt.savefig(f"results/plots/belief_scatter_2d_{stage.lower()}.png", dpi=300)
+        plt.savefig(f"{folder}/belief_scatter_2d_{stage.lower()}.png", dpi=300)
     plt.show()
 
 
-def plot_belief_scatter_3d(env, save=False, stage="final"):
+def plot_belief_scatter_3d(env, save=False, stage="final", folder="results/plots"):
     X = [a.LawAndOrder for a in env.agents]
     Y = [a.EconomicEquality for a in env.agents]
     Z = [a.SocialWelfare for a in env.agents]
@@ -102,9 +105,13 @@ def plot_belief_scatter_3d(env, save=False, stage="final"):
         title=f"Agents in 3D Belief Space ({stage.title()})"
     )
 
+    # Ensure the folder exists
+    os.makedirs(folder, exist_ok=True)
+
     if save:
-        plt.savefig(f"results/plots/belief_scatter_3d_{stage.lower()}.png", dpi=300)
+        plt.savefig(f"{folder}/belief_scatter_3d_{stage.lower()}.png", dpi=300)
     plt.show()
+
 
 # --------------------------------------------------------------------
 # PURE MATPLOTLIB EQUIVALENTS OF SOLARA PLOTS
@@ -165,6 +172,8 @@ def plot_avg_distance_per_party(env, folder="results/plots", filename="avg_dista
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
+        if party_name == "Undecided":
+                continue  # skip Undecided
         if party_name in grouped.columns:
             ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
     ax.set_xlabel("Step")
@@ -190,6 +199,8 @@ def plot_distance_std(env, folder="results/plots", filename="distance_std.png"):
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
+        # if party_name == "Undecided":
+        #         continue  # skip Undecided
         if party_name in grouped.columns:
             ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
     ax.set_xlabel("Step")
@@ -215,6 +226,8 @@ def plot_avg_susceptibility(env, folder="results/plots", filename="avg_susceptib
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
+        # if party_name == "Undecided":
+        #         continue  # skip Undecided
         if party_name in grouped.columns:
             ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
     ax.set_xlabel("Step")
@@ -280,6 +293,8 @@ def plot_fraction_original_party(env, folder="results/plots", filename="fraction
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
+        # if party_name == "Undecided":
+        #         continue  # skip Undecided
         if party_name in frac.columns:
             ax.plot(frac.index, frac[party_name] * 100, label=party_name, color=colour)
     ax.set_xlabel("Step")

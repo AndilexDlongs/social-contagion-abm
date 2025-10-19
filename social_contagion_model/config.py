@@ -6,7 +6,7 @@
 N_AGENTS = 1000
 GRID_WIDTH = 50
 GRID_HEIGHT = 50
-STEPS = 100
+STEPS = 1000
 
 # Multipliers (core dynamic factors)
 FAMILY_MULTIPLIER = 1.0

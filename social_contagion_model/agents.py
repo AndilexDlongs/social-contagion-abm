@@ -67,7 +67,7 @@ class FamilyAgent:
                 if member.party_affiliation == ruling_party:
                     new_vec = member.move_closer_to_other_party_vector()
                     # Amplify the shift using the multiplier
-                    amplified_vec = member.belief_vector() + self.family_multiplier * (new_vec - member.belief_vector())
+                    amplified_vec = member.belief_vector() + self.healthcare_multiplier * (new_vec - member.belief_vector())
 
                 # If they already oppose the ruling party → reinforce their own stance
                 else:
