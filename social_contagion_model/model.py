@@ -15,15 +15,29 @@ from utils import (count_Conservatism, count_Liberalism, count_Socialism,
 class Environment(mesa.Model):
     """Environment with agents, parties, and interactions."""
 
-    def __init__(self, n=5, width=3, height=3, seed=None,
-                seeding_strategy="fixed_split", 
+    def __init__(self, n=5, width=3, height=3, seed=None, 
                 undecided_ratio=0.1, 
                 majority_party="Conservatism", 
                 family_multiplier=1.2,
                 healthcare_multiplier=1.6, 
                 wealth_influence_factor=1, 
-                interaction_multiplier=0.8):
-     
+                interaction_multiplier=0.8,
+                susc_party_focus="Conservatism",
+                susc_focus_value="normal", 
+                susc_other_value="normal",
+                wealth_party_focus="Conservatism",
+                wealth_focus_value="normal",   # “low” | “high” | “normal”
+                wealth_other_value="normal",
+                conservatism_perc=0.4,
+                socialism_perc=0.35,
+                liberalism_perc=0.25,
+                conservatism_std=10,
+                socialism_std=10,
+                liberalism_std=10, 
+                sickness_chance=0.05,
+                min_family_size=3,
+                max_family_size=10):
+        
         super().__init__()
         self.seed = seed
         self.num_agents = n
@@ -40,6 +54,16 @@ class Environment(mesa.Model):
 
         # visualization helper
         self.step_count = 0
+
+        self.susc_party_focus = susc_party_focus
+        self.susc_focus_value = susc_focus_value
+        self.susc_other_value = susc_other_value
+
+        self.wealth_party_focus = wealth_party_focus
+        self.wealth_focus_value = wealth_focus_value
+        self.wealth_other_value = wealth_other_value
+
+
 
         # Attributes
         self.attribute_names = ["LawAndOrder", "EconomicEquality", "SocialWelfare"]
@@ -63,17 +87,37 @@ class Environment(mesa.Model):
         # NEW: Seeder Integration
         # --------------------------
         seeder = Seeder(
-            self.parties, 
-            undecided_ratio=undecided_ratio, 
-            strategy=seeding_strategy,
-            majority_party=majority_party,
-            fixed_seed=80
-        )
+        self.parties,
+        undecided_ratio=undecided_ratio,
+        majority_party=majority_party,
+        fixed_seed=80,
+        party_distribution={
+            "Conservatism": conservatism_perc,
+            "Socialism": socialism_perc,
+            "Liberalism": liberalism_perc
+        },
+        party_stddev={
+            "Conservatism": conservatism_std,
+            "Socialism": socialism_std,
+            "Liberalism": liberalism_std
+        }
+)
+
 
         init_agents = seeder.assign_agents(self.num_agents)
 
         for data in init_agents:
             agent = VoterAgent(self, cell=None)
+            # Pass global susceptibility config so agent logic triggers correctly
+            agent.susc_party_focus = self.susc_party_focus
+            agent.susc_focus_value = self.susc_focus_value
+            agent.susc_other_value = self.susc_other_value
+
+            agent.wealth_party_focus = self.wealth_party_focus
+            agent.wealth_focus_value = self.wealth_focus_value
+            agent.wealth_other_value = self.wealth_other_value
+
+            agent.sickness_chance = sickness_chance
             # beliefs + affiliation
             agent.update_from_vector(data["beliefs"])
 
@@ -90,7 +134,7 @@ class Environment(mesa.Model):
                 agent.distance = agent.party_distance()
 
             # attributes
-            agent.wealth = data["wealth"]
+            agent.initialize_wealth()
             # (later) agent.education = data["education"]; agent.health_care = data["healthcare"]
             # grid placement
             cell = self.random.choice(self.grid.all_cells.cells)
@@ -113,7 +157,7 @@ class Environment(mesa.Model):
             family_members = [agent]
 
             # Max family size 
-            max_size = self.random.randint(3, 10)
+            max_size = self.random.randint(min_family_size, max_family_size)
 
             for other in agents_list:
                 if other == agent or (hasattr(other, "family") and other.family):
@@ -170,6 +214,7 @@ class Environment(mesa.Model):
                 "interacted_with": lambda a: a.interacted_with,
                 "interacted_within_party": lambda a: a.interacted_within_party,
                 "wealth": lambda a: a.wealth,
+                "in_support": lambda a: a.in_support
             },
         )
 

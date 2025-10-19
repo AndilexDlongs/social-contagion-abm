@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-#from mpl_toolkits.mplot3d import Axes3
 import os
 
-# ensure folder structure exists
+# Ensure results folders exist
 os.makedirs("results/plots", exist_ok=True)
-
 
 # Shared colour map
 PARTY_COLOURS = {
@@ -18,11 +16,11 @@ PARTY_COLOURS = {
     "Undecided": "gray"
 }
 
+# --------------------------------------------------------------------
+# EXISTING FUNCTIONS BELOW
+# --------------------------------------------------------------------
+
 def plot_initial_party_affiliations(env, save=False, stage="final"):
-    """
-    Bar chart of how many agents are affiliated with each party.
-    stage: 'initial', 'middle', 'final', etc. used to label saved plots.
-    """
     votes = [a.party_affiliation for a in env.agents]
     counts = pd.Series(votes).value_counts().sort_index()
 
@@ -30,7 +28,7 @@ def plot_initial_party_affiliations(env, save=False, stage="final"):
     ax = sns.barplot(
         x=counts.index,
         y=counts.values,
-        hue=counts.index,       # assign hue to match palette use
+        hue=counts.index,
         palette=[PARTY_COLOURS.get(p, "gray") for p in counts.index],
         legend=False
     )
@@ -47,10 +45,6 @@ def plot_initial_party_affiliations(env, save=False, stage="final"):
 
 
 def plot_belief_scatter_2d(env, save=False, stage="final"):
-    """
-    Three side-by-side 2D projections of the ideological space.
-    stage: 'initial', 'middle', 'final', etc.
-    """
     X = [a.LawAndOrder for a in env.agents]
     Y = [a.EconomicEquality for a in env.agents]
     Z = [a.SocialWelfare for a in env.agents]
@@ -58,7 +52,7 @@ def plot_belief_scatter_2d(env, save=False, stage="final"):
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
-    axes[0].scatter(X, Y, c=colours, s=50, alpha=0.7) # what does s and alpha mean
+    axes[0].scatter(X, Y, c=colours, s=50, alpha=0.7)
     axes[0].set(xlabel="Law & Order", ylabel="Economic Equality",
                 title=f"L&O vs EconEq ({stage.title()})")
 
@@ -75,15 +69,11 @@ def plot_belief_scatter_2d(env, save=False, stage="final"):
 
     plt.tight_layout()
     if save:
-        plt.savefig(f"results/plots/belief_scatter_2d_{stage.lower()}.png", dpi=300) # whats dpi
+        plt.savefig(f"results/plots/belief_scatter_2d_{stage.lower()}.png", dpi=300)
     plt.show()
 
 
 def plot_belief_scatter_3d(env, save=False, stage="final"):
-    """
-    3D scatter of agents and party spheres in ideological space.
-    stage: 'initial', 'middle', 'final', etc.
-    """
     X = [a.LawAndOrder for a in env.agents]
     Y = [a.EconomicEquality for a in env.agents]
     Z = [a.SocialWelfare for a in env.agents]
@@ -115,3 +105,189 @@ def plot_belief_scatter_3d(env, save=False, stage="final"):
     if save:
         plt.savefig(f"results/plots/belief_scatter_3d_{stage.lower()}.png", dpi=300)
     plt.show()
+
+# --------------------------------------------------------------------
+# PURE MATPLOTLIB EQUIVALENTS OF SOLARA PLOTS
+# --------------------------------------------------------------------
+
+def plot_party_composition(env, folder="results/plots", filename="party_composition.png"):
+    """Stack plot showing % of each party at every step."""
+    df = env.datacollector.get_model_vars_dataframe()
+    if df.empty:
+        print("[WARN] No data for party composition plot.")
+        return
+
+    df = df.copy()
+    df["total"] = (
+        df["vote_Conservatism"]
+        + df["vote_Socialism"]
+        + df["vote_Liberalism"]
+        + df["vote_Undecided"]
+    ).replace(0, 1)
+
+    df["Conservatism%"] = df["vote_Conservatism"] / df["total"] * 100
+    df["Socialism%"] = df["vote_Socialism"] / df["total"] * 100
+    df["Liberalism%"] = df["vote_Liberalism"] / df["total"] * 100
+    df["Undecided%"] = df["vote_Undecided"] / df["total"] * 100
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.stackplot(
+        df.index,
+        df["Conservatism%"],
+        df["Socialism%"],
+        df["Liberalism%"],
+        df["Undecided%"],
+        labels=["Conservatism", "Socialism", "Liberalism", "Undecided"],
+        colors=["red", "blue", "green", "gray"],
+        alpha=0.6,
+    )
+    ax.set_ylim(0, 100)
+    ax.set_title("Party Composition Over Time")
+    ax.set_xlabel("Step")
+    ax.set_ylabel("% of Population")
+    ax.legend(loc="upper right")
+
+    os.makedirs(folder, exist_ok=True)
+    fig.savefig(os.path.join(folder, filename), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[Saved] {filename}")
+
+
+def plot_avg_distance_per_party(env, folder="results/plots", filename="avg_distance.png"):
+    """Average distance from party center per party over time."""
+    df_agents = env.datacollector.get_agent_vars_dataframe()
+    if df_agents.empty:
+        print("[WARN] No data for avg distance plot.")
+        return
+
+    df = df_agents.reset_index()
+    grouped = df.groupby(["Step", "party"])["distance_from_party"].mean().unstack(fill_value=np.nan)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for party_name, colour in PARTY_COLOURS.items():
+        if party_name in grouped.columns:
+            ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
+    ax.set_xlabel("Step")
+    ax.set_ylabel("Average Distance")
+    ax.set_title("Average Distance per Party")
+    ax.legend(loc="upper right")
+
+    os.makedirs(folder, exist_ok=True)
+    fig.savefig(os.path.join(folder, filename), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[Saved] {filename}")
+
+
+def plot_distance_std(env, folder="results/plots", filename="distance_std.png"):
+    """Standard deviation of distance from party center per party."""
+    df_agents = env.datacollector.get_agent_vars_dataframe()
+    if df_agents.empty:
+        print("[WARN] No data for distance std plot.")
+        return
+
+    df = df_agents.reset_index()
+    grouped = df.groupby(["Step", "party"])["distance_from_party"].std().unstack(fill_value=np.nan)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for party_name, colour in PARTY_COLOURS.items():
+        if party_name in grouped.columns:
+            ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
+    ax.set_xlabel("Step")
+    ax.set_ylabel("Std. Deviation of Distance")
+    ax.set_title("Distance Standard Deviation per Party")
+    ax.legend(loc="upper right")
+
+    os.makedirs(folder, exist_ok=True)
+    fig.savefig(os.path.join(folder, filename), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[Saved] {filename}")
+
+
+def plot_avg_susceptibility(env, folder="results/plots", filename="avg_susceptibility.png"):
+    """Average susceptibility per party."""
+    df_agents = env.datacollector.get_agent_vars_dataframe()
+    if df_agents.empty:
+        print("[WARN] No data for avg susceptibility plot.")
+        return
+
+    df = df_agents.reset_index()
+    grouped = df.groupby(["Step", "party"])["susceptibility"].mean().unstack(fill_value=np.nan)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for party_name, colour in PARTY_COLOURS.items():
+        if party_name in grouped.columns:
+            ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
+    ax.set_xlabel("Step")
+    ax.set_ylabel("Average Susceptibility")
+    ax.set_title("Average Susceptibility per Party")
+    ax.legend(loc="upper right")
+
+    os.makedirs(folder, exist_ok=True)
+    fig.savefig(os.path.join(folder, filename), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[Saved] {filename}")
+
+
+def plot_support_vs_rebellion(env, folder="results/plots", filename="support_vs_rebellion.png"):
+    """Stack plot of number of agents in support vs rebellion."""
+    df = env.datacollector.get_model_vars_dataframe()
+    if df.empty or "count_in_support" not in df.columns:
+        print("[WARN] No data for support vs rebellion plot.")
+        return
+
+    df2 = df.copy()
+    df2["total_agents"] = (
+        df2["vote_Conservatism"]
+        + df2["vote_Socialism"]
+        + df2["vote_Liberalism"]
+        + df2["vote_Undecided"]
+    )
+    df2["in_support"] = df2["count_in_support"]
+    df2["in_rebellion"] = df2["total_agents"] - df2["in_support"]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.stackplot(
+        df2.index,
+        df2["in_support"],
+        df2["in_rebellion"],
+        labels=["In Support", "In Rebellion"],
+        colors=["blue", "red"],
+        alpha=0.6,
+    )
+    ax.set_xlabel("Step")
+    ax.set_ylabel("Number of Agents")
+    ax.set_title("Support vs Rebellion Over Time")
+    ax.legend(loc="upper right")
+
+    os.makedirs(folder, exist_ok=True)
+    fig.savefig(os.path.join(folder, filename), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[Saved] {filename}")
+
+
+def plot_fraction_original_party(env, folder="results/plots", filename="fraction_original_party.png"):
+    """Fraction of agents still in their original party."""
+    df_agents = env.datacollector.get_agent_vars_dataframe()
+    if df_agents.empty:
+        print("[WARN] No data for fraction original party plot.")
+        return
+
+    df = df_agents.reset_index()
+    df["is_original"] = df["party"] == df["original_party"]
+    count_in_party = df.groupby(["Step", "party"]).size().unstack(fill_value=0)
+    count_original = df.groupby(["Step", "party"])["is_original"].sum().unstack(fill_value=0)
+    frac = count_original.divide(count_in_party.where(count_in_party != 0), fill_value=0)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for party_name, colour in PARTY_COLOURS.items():
+        if party_name in frac.columns:
+            ax.plot(frac.index, frac[party_name] * 100, label=party_name, color=colour)
+    ax.set_xlabel("Step")
+    ax.set_ylabel("% Still in Original Party")
+    ax.set_title("Fraction of Members Remaining in Original Party")
+    ax.legend(loc="upper right")
+
+    os.makedirs(folder, exist_ok=True)
+    fig.savefig(os.path.join(folder, filename), dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"[Saved] {filename}")

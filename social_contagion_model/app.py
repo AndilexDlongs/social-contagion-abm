@@ -4,7 +4,17 @@ from mesa.visualization import SolaraViz, SpaceRenderer
 from model import Environment
 import matplotlib.pyplot as plt
 import solara
-from config import N_AGENTS, GRID_WIDTH, GRID_HEIGHT, MAJORITY_PARTY, UND_RATIO, SEED_STRATEGY
+from config import (
+    N_AGENTS, GRID_WIDTH, GRID_HEIGHT, STEPS,
+    MAJORITY_PARTY, UND_RATIO,
+    FAMILY_MULTIPLIER, HEALTHCARE_MULTIPLIER,
+    WEALTH_INFLUENCE_FACTOR, INTERACTION_MULTIPLIER,
+    SUSC_PARTY_FOCUS, SUSC_FOCUS_VALUE, SUSC_OTHER_VALUE,
+    WEALTH_PARTY_FOCUS, WEALTH_FOCUS_VALUE, WEALTH_OTHER_VALUE,
+    CONSERVATISM_PERC, SOCIALISM_PERC, LIBERALISM_PERC,
+    CONSERVATISM_STD, SOCIALISM_STD, LIBERALISM_STD,
+    SICKNESS_CHANCE, MIN_FAMILY_SIZE, MAX_FAMILY_SIZE
+)
 from mesa.visualization.components import AgentPortrayalStyle
 
 
@@ -30,12 +40,42 @@ def agent_portrayal(agent):
 # Model setup
 # -------------------------------------------------
 social_contagion = Environment(
-    n=N_AGENTS,
-    width=GRID_WIDTH,
-    height=GRID_HEIGHT,
-    seeding_strategy=SEED_STRATEGY,
-    undecided_ratio=UND_RATIO,
-    majority_party=MAJORITY_PARTY
+        n=N_AGENTS,
+        width=GRID_WIDTH,
+        height=GRID_HEIGHT,
+        undecided_ratio=UND_RATIO,
+        majority_party=MAJORITY_PARTY,
+
+        # Core multipliers
+        family_multiplier=FAMILY_MULTIPLIER,
+        healthcare_multiplier=HEALTHCARE_MULTIPLIER,
+        wealth_influence_factor=WEALTH_INFLUENCE_FACTOR,
+        interaction_multiplier=INTERACTION_MULTIPLIER,
+
+        # Susceptibility setup
+        susc_party_focus=SUSC_PARTY_FOCUS,
+        susc_focus_value=SUSC_FOCUS_VALUE,
+        susc_other_value=SUSC_OTHER_VALUE,
+
+        # Wealth setup
+        wealth_party_focus=WEALTH_PARTY_FOCUS,
+        wealth_focus_value=WEALTH_FOCUS_VALUE,
+        wealth_other_value=WEALTH_OTHER_VALUE,
+
+        # Party distribution
+        conservatism_perc=CONSERVATISM_PERC,
+        socialism_perc=SOCIALISM_PERC,
+        liberalism_perc=LIBERALISM_PERC,
+
+        # Std devs
+        conservatism_std=CONSERVATISM_STD,
+        socialism_std=SOCIALISM_STD,
+        liberalism_std=LIBERALISM_STD,
+
+        # Health & family
+        sickness_chance=SICKNESS_CHANCE,
+        min_family_size=MIN_FAMILY_SIZE,
+        max_family_size=MAX_FAMILY_SIZE
 )
 
 model_params = {
@@ -49,7 +89,7 @@ model_params = {
     },
     "width": GRID_WIDTH,
     "height": GRID_HEIGHT,
-    "seeding_strategy": SEED_STRATEGY,
+     # "seeding_strategy": SEED_STRATEGY,
     "undecided_ratio": UND_RATIO,
     "majority_party": MAJORITY_PARTY,
 }
