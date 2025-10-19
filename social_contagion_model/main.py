@@ -107,6 +107,9 @@ def main():
 
     family_details = agent_df[["family_id", "family_members"]]
     family_details.to_csv("results/csv/family_details.csv")
+
+    switching_data = agent_df[["switched_this_step", "switch_cause", "party"]]
+    switching_data.to_csv("results/csv/switching_data.csv")
     
     display_df2 = env.datacollector.get_agent_vars_dataframe()
     avg_susc_after = display_df2.groupby("party")["susceptibility"].mean()

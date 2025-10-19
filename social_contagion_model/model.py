@@ -171,11 +171,11 @@ class Environment(mesa.Model):
                 closest_party = min(distances, key=distances.get)
                 if closest_party == agent.party_affiliation and distances[closest_party] < 20 and len(family_members) < family_size:
                     family_members.append(other)
-                    other.family = True
+                    # other.family = True
                 elif len(family_members) < family_size and self.random.random() < 0.2:
                     # Add random members to fill out family diversity
                     family_members.append(other)
-                    other.family = True
+                   # other.family = True
 
                 if len(family_members) >= family_size:
                     break
@@ -225,7 +225,9 @@ class Environment(mesa.Model):
                 "in_support": lambda a: a.in_support,
                 "family_id": lambda a: a.family_id,
                 "family_members": lambda a: a.family_members,
-                "family_size": lambda a: a.family_size
+                "family_size": lambda a: a.family_size,
+                "switched_this_step": lambda a: a.switched_this_step,
+                "switch_cause": lambda a: a.switch_cause if a.switch_cause else "none"
             },
         )
 

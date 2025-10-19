@@ -49,6 +49,9 @@ class FamilyAgent:
                 member.update_from_vector(self.reflect(adj_vec))
                 member.update_affiliation_and_support(old_party=member.party_affiliation)
 
+                if member.switched_this_step:
+                    member.switch_cause = "family_ripple"
+
     def react_to_death(self, deceased_member):
         """
         When a family member dies, surviving members react emotionally
@@ -73,6 +76,9 @@ class FamilyAgent:
                 # Apply reflection and update
                 member.update_from_vector(member.reflect(amplified_vec))
                 member.update_affiliation_and_support(old_party=member.party_affiliation)
+
+                if member.switched_this_step:
+                    member.switch_cause = "family_death_reaction"
 
     @staticmethod
     def reflect(vec, lower=0, upper=100):
@@ -355,46 +361,58 @@ class VoterAgent(CellAgent):
 
     def mutual_persuasion(self, other):
         if self.interacted_within_family or other.interacted_within_family:
-            new_self = self.belief_vector() + self.family.family_multiplier * self.susceptibility * (other.belief_vector() - self.belief_vector())
-            new_other = other.belief_vector() + other.family.family_multiplier * other.susceptibility * (self.belief_vector() - other.belief_vector())
+            self_factor = self.family.family_multiplier if hasattr(self, "family") and self.family else self.model.interaction_multiplier
+            other_factor = other.family.family_multiplier if hasattr(other, "family") and other.family else other.model.interaction_multiplier
+            new_self = self.belief_vector() + self_factor * self.susceptibility * (other.belief_vector() - self.belief_vector())
+            new_other = other.belief_vector() + other_factor * other.susceptibility * (self.belief_vector() - other.belief_vector())
         else:
             new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * (other.belief_vector() - self.belief_vector())
             new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (self.belief_vector() - other.belief_vector())
         return new_self, new_other
 
+
     def other_convinces_self(self, other):
         reinforce = (other.party_center() - other.belief_vector())
 
         if self.interacted_within_family or other.interacted_within_family:
-            new_self = self.belief_vector() + self.family.family_multiplier * self.susceptibility * (other.belief_vector() - self.belief_vector())
-            new_other = other.belief_vector() + other.family.family_multiplier * other.susceptibility * reinforce
+            self_factor = self.family.family_multiplier if hasattr(self, "family") and self.family else self.model.interaction_multiplier
+            other_factor = other.family.family_multiplier if hasattr(other, "family") and other.family else other.model.interaction_multiplier
+            new_self = self.belief_vector() + self_factor * self.susceptibility * (other.belief_vector() - self.belief_vector())
+            new_other = other.belief_vector() + other_factor * other.susceptibility * reinforce
         else:
             new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * (other.belief_vector() - self.belief_vector())
             new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * reinforce
 
         return new_self, new_other
 
+
     def self_convinces_other(self, other):
         reinforce = (self.party_center() - self.belief_vector())
-        
+
         if self.interacted_within_family or other.interacted_within_family:
-            new_other = other.belief_vector() + other.family.family_multiplier * other.susceptibility * (self.belief_vector() - other.belief_vector())
-            new_self = self.belief_vector() + self.family.family_multiplier * self.susceptibility * reinforce
+            self_factor = self.family.family_multiplier if hasattr(self, "family") and self.family else self.model.interaction_multiplier
+            other_factor = other.family.family_multiplier if hasattr(other, "family") and other.family else other.model.interaction_multiplier
+            new_other = other.belief_vector() + other_factor * other.susceptibility * (self.belief_vector() - other.belief_vector())
+            new_self = self.belief_vector() + self_factor * self.susceptibility * reinforce
         else:
             new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (self.belief_vector() - other.belief_vector())
             new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * reinforce
 
         return new_self, new_other
 
+
     def disagreement(self, other):  # go closer to own party center
         if self.interacted_within_family or other.interacted_within_family:
-            new_self = self.belief_vector() + self.family.family_multiplier * self.susceptibility * (self.party_center() - self.belief_vector())
-            new_other = other.belief_vector() + other.family.family_multiplier * other.susceptibility * (other.party_center() - other.belief_vector())
+            self_factor = self.family.family_multiplier if hasattr(self, "family") and self.family else self.model.interaction_multiplier
+            other_factor = other.family.family_multiplier if hasattr(other, "family") and other.family else other.model.interaction_multiplier
+            new_self = self.belief_vector() + self_factor * self.susceptibility * (self.party_center() - self.belief_vector())
+            new_other = other.belief_vector() + other_factor * other.susceptibility * (other.party_center() - other.belief_vector())
         else:
             new_self = self.belief_vector() + self.interaction_multiplier * self.susceptibility * (self.party_center() - self.belief_vector())
             new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (other.party_center() - other.belief_vector())
-        
+
         return new_self, new_other
+
 
     # overall susceptibilities might have to go lower for stubborn and higher for naive
     #def choose_rule(self, other):
@@ -510,6 +528,7 @@ class VoterAgent(CellAgent):
         # Update party affiliation
         self.update_affiliation_and_support(old_party=self.party_affiliation)
         other.update_affiliation_and_support(old_party=other.party_affiliation)
+        
 
         # --- Family ripple trigger ---
         if not self.interacted_within_family:
@@ -518,6 +537,15 @@ class VoterAgent(CellAgent):
             if hasattr(other, "family") and other.family:
                 other.family.ripple_influence(other, old_other, new_other)
 
+        #Tracking the cause of switching
+        if self.switched_this_step and not self.interacted_within_family:
+            self.switch_cause = "interaction"
+        elif self.switched_this_step and self.interacted_within_family:
+            self.switch_cause = "family_interaction"
+        if other.switched_this_step and not other.interacted_within_family:
+            other.switch_cause = "interaction"
+        elif other.switched_this_step and other.interacted_within_family:
+            other.switch_cause = "family_interaction"
     
     # ---------------------------
     # Environment Interaction Rules
@@ -568,6 +596,9 @@ class VoterAgent(CellAgent):
             self.update_affiliation_and_support(old_party=self.party_affiliation)
             self.wealth_dissatisfaction = 0
 
+            if self.switched_this_step:
+                self.switch_cause = "dissatisfied_wealth"
+
         elif self.wealth_dissatisfaction < self.satisfaction_threshold:
             # Very satisfied → go toward majority party since they're controlling the economy
             if self.model.majority_party == self.party_affiliation:
@@ -579,6 +610,9 @@ class VoterAgent(CellAgent):
             self.update_from_vector(self.reflect(wealth_effect_new))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
             self.wealth_dissatisfaction = 0
+
+            if self.switched_this_step:
+                self.switch_cause = "satisfied_wealth"
 
     def compare_wealth(self, other):
         wealth_gap = other.wealth - self.wealth
@@ -654,6 +688,12 @@ class VoterAgent(CellAgent):
             if self.party_affiliation == other.party_affiliation:
                 self.interacted_within_party = True
                 other.interacted_within_party = True
+                if self.switched_this_step:
+                    if self.switch_cause:
+                        self.switch_cause += "_within_party"
+                if other.switched_this_step:
+                    if other.switch_cause:
+                        other.switch_cause += "_within_party"
             other.has_interacted = True
             other.interacted_with = int(self.unique_id)
 
@@ -729,6 +769,7 @@ class VoterAgent(CellAgent):
         self.switched_in_support = False
         self.switched_in_rebellion = False
         self.interacted_with = None
+        self.switch_cause = None
         
 
     def __repr__(self):
