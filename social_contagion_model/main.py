@@ -7,11 +7,11 @@ from config import (
     MAJORITY_PARTY, UND_RATIO,
     FAMILY_MULTIPLIER, HEALTHCARE_MULTIPLIER,
     WEALTH_INFLUENCE_FACTOR, INTERACTION_MULTIPLIER,
-    SUSC_PARTY_FOCUS, SUSC_FOCUS_VALUE, SUSC_OTHER_VALUE,
-    WEALTH_PARTY_FOCUS, WEALTH_FOCUS_VALUE, WEALTH_OTHER_VALUE,
     CONSERVATISM_PERC, SOCIALISM_PERC, LIBERALISM_PERC,
     CONSERVATISM_STD, SOCIALISM_STD, LIBERALISM_STD,
-    SICKNESS_CHANCE, MIN_FAMILY_SIZE, MAX_FAMILY_SIZE
+    SICKNESS_CHANCE, MIN_FAMILY_SIZE, MAX_FAMILY_SIZE,
+    CONSERVATISM_SUSC, SOCIALISM_SUSC, LIBERALISM_SUSC, 
+    CONSERVATISM_WEALTH, SOCIALISM_WEALTH, LIBERALISM_WEALTH 
 )
 import os
 from plots import (
@@ -45,14 +45,24 @@ def main():
         interaction_multiplier=INTERACTION_MULTIPLIER,
 
         # Susceptibility setup
-        susc_party_focus=SUSC_PARTY_FOCUS,
-        susc_focus_value=SUSC_FOCUS_VALUE,
-        susc_other_value=SUSC_OTHER_VALUE,
+        # susc_party_focus=SUSC_PARTY_FOCUS,
+        # susc_focus_value=SUSC_FOCUS_VALUE,
+        # susc_other_value=SUSC_OTHER_VALUE,
 
         # Wealth setup
-        wealth_party_focus=WEALTH_PARTY_FOCUS,
-        wealth_focus_value=WEALTH_FOCUS_VALUE,
-        wealth_other_value=WEALTH_OTHER_VALUE,
+        # wealth_party_focus=WEALTH_PARTY_FOCUS,
+        # wealth_focus_value=WEALTH_FOCUS_VALUE,
+        # wealth_other_value=WEALTH_OTHER_VALUE,
+
+        # Susceptibility setup
+        conservatism_susc=CONSERVATISM_SUSC, 
+        socialism_susc=SOCIALISM_SUSC,
+        liberalism_susc=LIBERALISM_SUSC,
+
+        # Wealth setup
+        conservatism_wealth=CONSERVATISM_WEALTH, 
+        socialism_wealth=SOCIALISM_WEALTH, 
+        liberalism_wealth=LIBERALISM_WEALTH,
 
         # Party distribution
         conservatism_perc=CONSERVATISM_PERC,
@@ -145,12 +155,12 @@ def main():
         "HEALTHCARE_MULTIPLIER": HEALTHCARE_MULTIPLIER,
         "WEALTH_INFLUENCE_FACTOR": WEALTH_INFLUENCE_FACTOR,
         "INTERACTION_MULTIPLIER": INTERACTION_MULTIPLIER,
-        "SUSC_PARTY_FOCUS": SUSC_PARTY_FOCUS,
-        "SUSC_FOCUS_VALUE": SUSC_FOCUS_VALUE,
-        "SUSC_OTHER_VALUE": SUSC_OTHER_VALUE,
-        "WEALTH_PARTY_FOCUS": WEALTH_PARTY_FOCUS,
-        "WEALTH_FOCUS_VALUE": WEALTH_FOCUS_VALUE,
-        "WEALTH_OTHER_VALUE": WEALTH_OTHER_VALUE,
+        "CONSERVATISM_SUSC" : CONSERVATISM_SUSC,
+        "SOCIALISM_SUSC" : SOCIALISM_SUSC,
+        "LIBERALISM_SUSC" : LIBERALISM_SUSC,
+        "CONSERVATISM_WEALTH" : CONSERVATISM_WEALTH,
+        "SOCIALISM_WEALTH" : SOCIALISM_WEALTH,
+        "LIBERALISM_WEALTH" : LIBERALISM_WEALTH,
         "CONSERVATISM_PERC": CONSERVATISM_PERC,
         "SOCIALISM_PERC": SOCIALISM_PERC,
         "LIBERALISM_PERC": LIBERALISM_PERC,

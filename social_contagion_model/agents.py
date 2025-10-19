@@ -138,12 +138,6 @@ class VoterAgent(CellAgent):
         self.interaction_multiplier = model.interaction_multiplier
         self.family_id = None
         self.cell = cell
-        self.susc_party_focus = "Undecided"
-        self.susc_focus_value = None
-        self.susc_other_value = None
-        self.wealth_party_focus = "Undecided"
-        self.wealth_focus_value = None
-        self.wealth_other_value = None
         self.sickness_chance = 0.05
         self.family_members = None
         self.family_size = None
@@ -152,86 +146,50 @@ class VoterAgent(CellAgent):
         if(self.model.majority_party == self.party_affiliation):
             self.in_support = True
 
-        # Set susceptibility based on model configuration
-        if self.susc_focus_value == "low":
-            if self.susc_other_value == "normal":
-                if self.party_affiliation == self.susc_party_focus:
-                    if np.random.random < 0.9:
-                        self.susceptibility = self.low # this makes majority low
-                    else:
-                        self.susceptibility = self.high
-                else:
-                    self.susceptibility = np.random.choice([self.low, self.high])
-            elif self.susc_other_value == "high":
-                if self.party_affiliation == self.susc_party_focus:
-                    if np.random.random < 0.9:
-                        self.susceptibility = self.low  # this makes majority low
-                    else:
-                        self.susceptibility = self.high
-                else:
-                    if np.random.random < 0.9:          
-                        self.susceptibility = self.high  # this makes majority of other parties high
-                    else:
-                        self.susceptibility = self.low
-        elif self.susc_focus_value == "high":
-            if self.susc_other_value == "normal":
-                if self.party_affiliation == self.susc_party_focus:
-                    if np.random.random < 0.9:
-                        self.susceptibility = self.high # this makes majority high
-                    else:
-                        self.susceptibility = self.low
-                else:
-                    self.susceptibility = np.random.choice([self.low, self.high])
-            elif self.susc_other_value == "low":
-                if self.party_affiliation == self.susc_party_focus:
-                    if np.random.random < 0.9:
-                        self.susceptibility = self.high  # this makes majority high
-                    else:
-                        self.susceptibility = self.low
-                else:
-                    if np.random.random < 0.9:          
-                        self.susceptibility = self.low  # this makes majority of other parties high
-                    else:
-                        self.susceptibility = self.high
-        else :
-            self.susceptibility = np.random.choice([self.low, self.high])
-
     # ---------------------------
     # Wealth Initialization Method
     # ---------------------------
-    def initialize_wealth(self):
-        """Assign initial wealth based on model configuration and party affiliation."""
-        raw_wealth = np.random.beta(2, 5) * 100
-        beta_cutoff = 26
+    def initialize_wealth(self, conservatism_wealth, socialism_wealth, liberalism_wealth):
+        """Initializes wealth based on party affiliation and wealth distribution percentages."""
+        raw_wealth = np.random.beta(2, 5) * 100  # Random wealth generation
+        beta_cutoff = 26  # Threshold for wealth categorization (can be adjusted)
 
-        focus = self.wealth_focus_value
-        other = self.wealth_other_value
-        party = self.party_affiliation
-        focus_party = self.wealth_party_focus
-
-        if focus == "low" and other == "normal":
-            if party == focus_party:
+        # Wealth focus per party
+        if self.party_affiliation == "Conservatism":
+            if np.random.random() < conservatism_wealth:
                 self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
             else:
                 self.wealth = raw_wealth
-        elif focus == "high" and other == "normal":
-            if party == focus_party:
-                self.wealth = raw_wealth if raw_wealth > beta_cutoff else np.random.uniform(beta_cutoff, 100)
+        
+        elif self.party_affiliation == "Socialism":
+            if np.random.random() < socialism_wealth:
+                self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
             else:
                 self.wealth = raw_wealth
-        elif focus == "low" and other == "high":
-            if party == focus_party:
+        
+        elif self.party_affiliation == "Liberalism":
+            if np.random.random() < liberalism_wealth:
                 self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
             else:
-                self.wealth = raw_wealth if raw_wealth > beta_cutoff else np.random.uniform(beta_cutoff, 100)
-        elif focus == "high" and other == "low":
-            if party == focus_party:
-                self.wealth = raw_wealth if raw_wealth > beta_cutoff else np.random.uniform(beta_cutoff, 100)
-            else:
-                self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
-        else:
-            self.wealth = raw_wealth
+                self.wealth = raw_wealth
 
+
+    def initialize_susceptibility(self, conservatism_susc, socialism_susc, liberalism_susc):
+        if self.party_affiliation == "Conservatism":
+            if np.random.random() < conservatism_susc:
+                self.susceptibility = self.low # this makes majority low
+            else:
+                self.susceptibility = self.high
+        elif self.party_affiliation == "Socialism":
+            if np.random.random() < socialism_susc:
+                self.susceptibility = self.low # this makes majority low
+            else:
+                self.susceptibility = self.high
+        elif self.party_affiliation == "Liberalism":
+            if np.random.random() < liberalism_susc:
+                self.susceptibility = self.low # this makes majority low
+            else:
+                self.susceptibility = self.high
 
     # ---------------------------
     # Helper methods
