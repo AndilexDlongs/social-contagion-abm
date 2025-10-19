@@ -10,7 +10,7 @@ from utils import (count_Conservatism, count_Liberalism, count_Socialism,
                    count_Undecided, count_in_support, num_interactions,
                    num_switches, num_switches_in_rebellion,
                    num_switches_in_support, vote_counts, num_interactions_in_party,
-                   num_interactions_cross_party,)
+                   num_interactions_cross_party, count_sick_agents)
 
 class Environment(mesa.Model):
     """Environment with agents, parties, and interactions."""
@@ -75,6 +75,7 @@ class Environment(mesa.Model):
         self.state = { 
             "average_wealth": 0
         }
+        self.death_count = 0
 
         # Parties
         self.parties = [
@@ -210,6 +211,8 @@ class Environment(mesa.Model):
                 "num_switches_in_support": num_switches_in_support,
                 "num_switches_in_rebellion": num_switches_in_rebellion,
                 "avg_wealth": lambda m: m.state["average_wealth"],
+                "death_count": lambda m: m.death_count,
+                "sickness_count": count_sick_agents
             },
             agent_reporters={
                 "belief_vector": lambda a: a.belief_vector().tolist(),
@@ -276,6 +279,7 @@ class Environment(mesa.Model):
             if d.cell and d in d.cell.agents:
                 d.cell.agents.remove(d)
             self.agents.remove(d)
+            self.death_count += 1
 
         self.datacollector.collect(self)
         self.agents.shuffle_do("reset")
