@@ -592,24 +592,20 @@ class VoterAgent(CellAgent):
         """
         if self.alive and self.healthy:
             # % chance of getting sick per step (tune this)
-            if self.random.random() < self.sickness_chance:
+            if np.random.random() < self.sickness_chance:
                 self.healthy = False
 
     def perceive_healthcare(self): 
-        if not self.healthy and self.alive:  # Only act if sick and alive
-            if self.wealth >= 18: # assuming average wealth is around 27
+        if ( self.healthy == False ) and self.alive:  # Only act if sick and alive
+            if self.wealth >= 10: # assuming average wealth is around 27
                 self.health_care = "Private"
                 self.healthy = True  # More likely to be healthy
             else:
                 self.health_care = "Public"
-                if self.random.random() < 0.6:
-                    self.healthy = False  # More likely to be sick
+                if np.random.random() < 0.4:
                     self.alive = False  # Agent dies if sick and using public healthcare
                     if hasattr(self, "family") and self.family:
                         self.family.react_to_death(self)
-                else:
-                    self.healthy = True
-
 
     def give_wealth(self, other):
         # compare wealth levels
@@ -728,7 +724,8 @@ class VoterAgent(CellAgent):
         self.switched_in_rebellion = False
         self.interacted_with = None
         self.switch_cause = None
-        
+        if self.alive:
+            self.healthy = True  # Reset health status each step
 
     def __repr__(self):
         return (f"Law&Order: {self.LawAndOrder:.1f}, "

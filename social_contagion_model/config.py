@@ -42,7 +42,7 @@ MAX_FAMILY_SIZE = 3
 # =======================
 # Health and Wealth Factors
 # =======================
-SICKNESS_CHANCE = 0.05        # 5% chance of getting sick per step
+SICKNESS_CHANCE = 0.01        # 5% chance of getting sick per step
 
 # percentage of stubborn agents (low susceptibility)
 CONSERVATISM_SUSC = 0.9

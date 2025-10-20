@@ -66,6 +66,7 @@ class Environment(mesa.Model):
             "average_wealth": 0
         }
         self.death_count = 0
+        self.sickness_from_deaths = 0
 
         # Parties
         self.parties = [
@@ -204,7 +205,7 @@ class Environment(mesa.Model):
                 "num_switches_in_rebellion": num_switches_in_rebellion,
                 "avg_wealth": lambda m: m.state["average_wealth"],
                 "death_count": lambda m: m.death_count,
-                "sickness_count": count_sick_agents
+                "sickness_count": lambda m: m.count_sick_agents() + m.sickness_from_deaths
             },
             agent_reporters={
                 "belief_vector": lambda a: a.belief_vector().tolist(),
@@ -222,7 +223,10 @@ class Environment(mesa.Model):
                 "family_members": lambda a: a.family_members,
                 "family_size": lambda a: a.family_size,
                 "switched_this_step": lambda a: a.switched_this_step,
-                "switch_cause": lambda a: a.switch_cause if a.switch_cause else "none"
+                "switch_cause": lambda a: a.switch_cause if a.switch_cause else "none",
+                "alive": lambda a: a.alive,
+                "healthcare_access": lambda a: a.health_care,
+                "healthy": lambda a: a.healthy
             },
         )
 
@@ -240,6 +244,9 @@ class Environment(mesa.Model):
         """Compute and store global environmental metrics."""
         self.state["average_wealth"] = np.mean([a.wealth for a in self.agents])
         
+    def count_sick_agents(self):
+        """Count how many agents are currently sick."""
+        return sum(1 for a in self.agents if getattr(a, "healthy", True) is False)
 
     def evaluate_majority_party(self):
         df = self.datacollector.get_model_vars_dataframe()
@@ -272,9 +279,12 @@ class Environment(mesa.Model):
                 d.cell.agents.remove(d)
             self.agents.remove(d)
             self.death_count += 1
+            self.sickness_from_deaths += 1
 
         self.datacollector.collect(self)
         self.agents.shuffle_do("reset")
+        self.death_count = 0  # reset death count after collection
+        self.sickness_from_deaths = 0  # reset sickness from deaths after collection
         self.step_count += 1
 
     # def media_campaign(self, bias):
