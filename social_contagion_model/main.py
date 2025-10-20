@@ -82,7 +82,7 @@ def main():
 
     # Create unique folder for this run (based on random seed or ID)
     run_id = env.seed or np.random.randint(1000)
-    run_folder = f"results/run_{run_id}"
+    run_folder = f"results/run_2"
     
     # Create subfolders for plots and csv
     os.makedirs(f"{run_folder}/plots", exist_ok=True)

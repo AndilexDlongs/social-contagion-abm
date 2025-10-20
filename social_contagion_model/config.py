@@ -22,14 +22,14 @@ MAJORITY_PARTY = "Socialism"
 # Party Distributions (initial population %)
 # Must sum to ~1.0 (will normalize automatically)
 # =======================
-CONSERVATISM_PERC = 0.6
-SOCIALISM_PERC = 0.15
-LIBERALISM_PERC = 0.15
+CONSERVATISM_PERC = 0.3
+SOCIALISM_PERC = 0.2
+LIBERALISM_PERC = 0.4
 
 # =======================
 # Belief Spread (stddev for each party)
 # =======================
-CONSERVATISM_STD = 5
+CONSERVATISM_STD = 10
 SOCIALISM_STD = 10
 LIBERALISM_STD = 10
 
@@ -45,13 +45,13 @@ MAX_FAMILY_SIZE = 3
 SICKNESS_CHANCE = 0.01        # 5% chance of getting sick per step
 
 # percentage of stubborn agents (low susceptibility)
-CONSERVATISM_SUSC = 0.9
-SOCIALISM_SUSC = 0.3
-LIBERALISM_SUSC = 0.3
+CONSERVATISM_SUSC = 0.5
+SOCIALISM_SUSC = 0.5
+LIBERALISM_SUSC = 0.5
 
-CONSERVATISM_WEALTH = 1
-SOCIALISM_WEALTH = 0.3
-LIBERALISM_WEALTH = 0.3
+CONSERVATISM_WEALTH = 0.5
+SOCIALISM_WEALTH = 0.5
+LIBERALISM_WEALTH = 0.5
 
 # =======================
 # Random Seed (for reproducibility)
