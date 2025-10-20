@@ -157,19 +157,19 @@ class VoterAgent(CellAgent):
         # Wealth focus per party
         if self.party_affiliation == "Conservatism":
             if np.random.random() < conservatism_wealth:
-                self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
+                self.wealth = raw_wealth if raw_wealth > beta_cutoff else np.random.uniform(0, beta_cutoff)
             else:
                 self.wealth = raw_wealth
         
         elif self.party_affiliation == "Socialism":
             if np.random.random() < socialism_wealth:
-                self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
+                self.wealth = raw_wealth if raw_wealth > beta_cutoff else np.random.uniform(0, beta_cutoff)
             else:
                 self.wealth = raw_wealth
         
         elif self.party_affiliation == "Liberalism":
             if np.random.random() < liberalism_wealth:
-                self.wealth = raw_wealth if raw_wealth < beta_cutoff else np.random.uniform(0, beta_cutoff)
+                self.wealth = raw_wealth if raw_wealth > beta_cutoff else np.random.uniform(0, beta_cutoff)
             else:
                 self.wealth = raw_wealth
 
@@ -597,7 +597,7 @@ class VoterAgent(CellAgent):
 
     def perceive_healthcare(self): 
         if not self.healthy and self.alive:  # Only act if sick and alive
-            if self.wealth >= 27: # assuming average wealth is around 27
+            if self.wealth >= 18: # assuming average wealth is around 27
                 self.health_care = "Private"
                 self.healthy = True  # More likely to be healthy
             else:
