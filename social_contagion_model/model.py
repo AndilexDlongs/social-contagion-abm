@@ -157,7 +157,7 @@ class Environment(mesa.Model):
                 if other == agent or (hasattr(other, "family") and other.family):
                     continue
 
-                # Find if this other agent is closer to *another* party center than their own
+                # Find if this other agent is closer to another party center than their own
                 own_party_center = agent.party_center()
                 distances = {p.name: np.linalg.norm(other.belief_vector() - p.center_vector()) for p in self.parties}
 
@@ -226,7 +226,8 @@ class Environment(mesa.Model):
                 "switch_cause": lambda a: a.switch_cause if a.switch_cause else "none",
                 "alive": lambda a: a.alive,
                 "healthcare_access": lambda a: a.health_care,
-                "healthy": lambda a: a.healthy
+                "healthy": lambda a: a.healthy,
+                "movement_tracker": lambda a: a.movement_tracker
             },
         )
 
@@ -290,4 +291,3 @@ class Environment(mesa.Model):
     # def media_campaign(self, bias):
     #    """ Conduct a media campaign with a specific bias. """
     #   self.agents.do("media_influence", bias)
-        

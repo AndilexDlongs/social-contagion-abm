@@ -39,6 +39,8 @@ class FamilyAgent:
         for member in self.members:
             if member == initiator:
                 continue
+            old_party = member.party_affiliation
+            old_vec = member.belief_vector()
             # ideological distance
             dist = np.linalg.norm(member.belief_vector() - initiator.belief_vector())
             # standard distance decay-based probability
@@ -48,9 +50,15 @@ class FamilyAgent:
                 adj_vec = member.belief_vector() + self.family_multiplier * member.susceptibility * (new_vec - old_vec)
                 member.update_from_vector(self.reflect(adj_vec))
                 member.update_affiliation_and_support(old_party=member.party_affiliation)
+            
+            new_party = member.party_affiliation
+            new_vec = member.belief_vector()
 
-                if member.switched_this_step:
-                    member.switch_cause = "family_ripple"
+            member.movement_tracker["family_ripple"] = int(np.linalg.norm(new_vec - old_vec))
+
+            if old_party != new_party:
+                member.switched_this_step = True
+                member.switch_cause.append("family_ripple")
 
     def react_to_death(self, deceased_member):
         """
@@ -59,7 +67,8 @@ class FamilyAgent:
         """
         for member in self.members:
             if member.alive:
-
+                old_party = member.party_affiliation
+                old_vec = member.belief_vector()
                 # If the ruling party is in power
                 ruling_party = self.model.majority_party
 
@@ -77,13 +86,19 @@ class FamilyAgent:
                 member.update_from_vector(member.reflect(amplified_vec))
                 member.update_affiliation_and_support(old_party=member.party_affiliation)
 
-                if member.switched_this_step:
-                    member.switch_cause = "family_death_reaction"
+                new_party = member.party_affiliation
+                new_vec = member.belief_vector()
+
+                member.movement_tracker["death reaction"] = int(np.linalg.norm(new_vec - old_vec))
+
+                if old_party != new_party:
+                    member.switched_this_step = True
+                    member.switch_cause.append("death_shock")
 
     @staticmethod
     def reflect(vec, lower=0, upper=100):
         """
-        Reflects values in `vec` back into range [lower, upper].
+        Reflects values in vec back into range [lower, upper].
         Works for scalars or NumPy arrays.
         """
         vec = np.asarray(vec, dtype=float)
@@ -114,15 +129,22 @@ class VoterAgent(CellAgent):
         self.distance = self.party_distance()
         self.low = np.random.uniform(0, 0.1)
         self.mid = np.random.uniform(0.3, 0.8)
-        self.high = np.random.uniform(1.6, 2)
+        self.high = np.random.uniform(1.2, 1.6)
         self.susceptibility = np.random.choice([self.low, self.high]) # np.random.uniform(0, 1) # low # 
         self.switched_this_step = False
         self.switched_in_support = False
         self.switched_in_rebellion = False
-        self.switch_cause = None # This will be used to track why an agent switched parties
+        self.movement_tracker = {
+            "death reaction": 0,
+            "policy influence": 0,
+            "family ripple": 0,
+            "wealth comparison": 0
+        }
+        self.switch_cause = [] # This will be used to track why an agent switched parties
         self.has_interacted = False
         self.interacted_with = None
         self.interacted_within_party = False
+        self.interacted_cross_party = False
         self.in_support = False
         self.wealth = 0
         self.wealth_dissatisfaction = 0 # track the economic dissatisfaction of the agent and can be totalled for the model
@@ -268,6 +290,9 @@ class VoterAgent(CellAgent):
             if p.name == party:
                 return p.center_vector()
             
+    def distance_from_opinions(vec_2, vec_1):
+        return np.linalg.norm(vec_2 - vec_1)
+            
     def distance_from_nearest_party(self):
         # Find nearest party
         if self.party_affiliation != "Undecided":
@@ -296,7 +321,7 @@ class VoterAgent(CellAgent):
     @staticmethod
     def reflect(vec, lower=0, upper=100):
         """
-        Reflects values in `vec` back into range [lower, upper].
+        Reflects values in vec back into range [lower, upper].
         Works for scalars or NumPy arrays.
         """
         vec = np.asarray(vec, dtype=float)
@@ -465,16 +490,22 @@ class VoterAgent(CellAgent):
             if self.family == other.family:
                 # Skip ripple triggers if family interaction
                 self.interacted_within_family = True
+                other.interacted_within_family = True
             else:
                 self.interacted_within_family = False
+                other.interacted_within_family = False
         else:
             self.interacted_within_family = False
+            other.interacted_within_family = False
 
+        old_self = self.belief_vector().copy()
+        old_other = other.belief_vector().copy()
 
         rule = self.choose_rule(other)
         new_self, new_other = self.interaction_rules[rule](self, other) # what's happening here?
-        old_self = self.belief_vector().copy()
-        old_other = other.belief_vector().copy()
+
+        other_old_party = other.party_affiliation
+        self_old_party = self.party_affiliation
 
         # Update beliefs (clamp between 0–100)
         #self.update_from_vector(np.clip(new_self, 0, 100))
@@ -482,11 +513,60 @@ class VoterAgent(CellAgent):
         self.update_from_vector(self.reflect(new_self))
         other.update_from_vector(self.reflect(new_other))
 
+        new_self_vec = self.belief_vector()
+        new_other_vec = other.belief_vector()
 
+        self.movement_tracker["policy influence"] = int(np.linalg.norm(new_self_vec - old_self))
+        other.movement_tracker["policy influence"] = int(np.linalg.norm(new_other_vec - old_other))
         # Update party affiliation
         self.update_affiliation_and_support(old_party=self.party_affiliation)
         other.update_affiliation_and_support(old_party=other.party_affiliation)
         
+        other_new_party = other.party_affiliation
+        self_new_party = self.party_affiliation
+
+        if (other_old_party != other_new_party):
+            if other.interacted_within_family:
+                if other.party_affiliation == self.party_affiliation:
+                    other.switched_this_step = True
+                    other.interacted_within_family = True
+                    other.interacted_within_party = True
+                    other.switch_cause.append("family_interaction_within_party")
+                else:    
+                    other.switched_this_step = True
+                    other.interacted_cross_party = True
+                    other.switch_cause.append("family_interaction_cross_party")
+            else:
+                if other.party_affiliation == self.party_affiliation:
+                    other.switched_this_step = True
+                    other.interacted_within_party = True
+                    other.switch_cause.append("interaction_within_party")
+                else:
+                    other.switched_this_step = True
+                    other.interacted_cross_party = True
+                    other.switch_cause.append("interaction_cross_party")
+        
+        if self_old_party != self_new_party:
+            if self.interacted_within_family:
+                if self.party_affiliation == other.party_affiliation:
+                    self.switched_this_step = True
+                    self.interacted_within_family = True
+                    self.interacted_within_party = True
+                    self.switch_cause.append("family_interaction_within_party")
+                else:
+                    self.switched_this_step = True
+                    self.interacted_within_family = False
+                    self.interacted_cross_party = True
+                    self.switch_cause.append("family_interaction_cross_party")
+            else:
+                if self.party_affiliation == other.party_affiliation:
+                    self.switched_this_step = True
+                    self.interacted_within_party = True
+                    self.switch_cause.append("interaction_within_party")
+                else:
+                    self.switched_this_step = True
+                    self.interacted_cross_party = True
+                    self.switch_cause.append("interaction_cross_party")
 
         # --- Family ripple trigger ---
         if not self.interacted_within_family:
@@ -495,16 +575,6 @@ class VoterAgent(CellAgent):
             if hasattr(other, "family") and other.family:
                 other.family.ripple_influence(other, old_other, new_other)
 
-        #Tracking the cause of switching
-        if self.switched_this_step and not self.interacted_within_family:
-            self.switch_cause = "interaction"
-        elif self.switched_this_step and self.interacted_within_family:
-            self.switch_cause = "family_interaction"
-        if other.switched_this_step and not other.interacted_within_family:
-            other.switch_cause = "interaction"
-        elif other.switched_this_step and other.interacted_within_family:
-            other.switch_cause = "family_interaction"
-    
     # ---------------------------
     # Environment Interaction Rules
     # ---------------------------
@@ -542,7 +612,10 @@ class VoterAgent(CellAgent):
 
     def adjust_economic_view(self):
         """Adjust ideological position when dissatisfaction thresholds are reached."""
+        old_vec = self.belief_vector()
+
         if self.wealth_dissatisfaction > self.dissatisfaction_threshold:
+            old_party = self.party_affiliation
             # Too dissatisfied → shift away from own or majority party
             if self.model.majority_party == self.party_affiliation:
                 new_self = self.move_closer_to_other_party_vector()
@@ -550,14 +623,18 @@ class VoterAgent(CellAgent):
             else:
                 new_self = self.move_closer_to_own_party_vector()
                 wealth_effect_new = self.belief_vector() + self.wealth_influence_factor * (new_self - self.belief_vector())
+
             self.update_from_vector(self.reflect(wealth_effect_new))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
             self.wealth_dissatisfaction = 0
 
-            if self.switched_this_step:
-                self.switch_cause = "dissatisfied_wealth"
+            new_party = self.party_affiliation
+
+            if old_party != new_party:
+                self.switch_cause.append("dissatisfied_wealth")
 
         elif self.wealth_dissatisfaction < self.satisfaction_threshold:
+            old_party = self.party_affiliation
             # Very satisfied → go toward majority party since they're controlling the economy
             if self.model.majority_party == self.party_affiliation:
                 new_self = self.move_closer_to_own_party_vector()
@@ -565,13 +642,20 @@ class VoterAgent(CellAgent):
             else:
                 new_self = self.move_closer_to_majority_party_vector()
                 wealth_effect_new = self.belief_vector() + self.wealth_influence_factor * (new_self - self.belief_vector())
+
             self.update_from_vector(self.reflect(wealth_effect_new))
             self.update_affiliation_and_support(old_party=self.party_affiliation)
             self.wealth_dissatisfaction = 0
 
-            if self.switched_this_step:
-                self.switch_cause = "satisfied_wealth"
+            new_party = self.party_affiliation
 
+            if old_party != new_party:
+                self.switch_cause.append("satisfied_wealth")
+
+        new_vec = self.belief_vector()
+
+        self.movement_tracker["wealth comparison"] = int(np.linalg.norm(new_vec - old_vec))
+            
     def compare_wealth(self, other):
         wealth_gap = other.wealth - self.wealth
 
@@ -596,7 +680,7 @@ class VoterAgent(CellAgent):
                 self.healthy = False
 
     def perceive_healthcare(self): 
-        if ( self.healthy == False ) and self.alive:  # Only act if sick and alive
+        if self.healthy == False and self.alive:  # Only act if sick and alive
             if self.wealth >= 10: # assuming average wealth is around 27
                 self.health_care = "Private"
                 self.healthy = True  # More likely to be healthy
@@ -638,18 +722,9 @@ class VoterAgent(CellAgent):
 
             # mark both as having interacted
             self.has_interacted = True
-            self.interacted_with = int(other.unique_id)
-            if self.party_affiliation == other.party_affiliation:
-                self.interacted_within_party = True
-                other.interacted_within_party = True
-                if self.switched_this_step:
-                    if self.switch_cause:
-                        self.switch_cause += "_within_party"
-                if other.switched_this_step:
-                    if other.switch_cause:
-                        other.switch_cause += "_within_party"
+            self.interacted_with = int(other.unique_id)    
             other.has_interacted = True
-            other.interacted_with = int(self.unique_id)
+            other.interacted_with = int(self.unique_id)            
 
     def force_vote(self):
         """Final decision for undecided agents based on susceptibility and history."""
@@ -723,13 +798,20 @@ class VoterAgent(CellAgent):
         self.switched_in_support = False
         self.switched_in_rebellion = False
         self.interacted_with = None
-        self.switch_cause = None
+        self.interacted_within_party = False
+        self.interacted_cross_party = False
+        self.switch_cause = []
+        self.movement_tracker = {
+            "death reaction": 0,
+            "policy influence": 0,
+            "family ripple": 0,
+            "wealth comparison": 0
+        }
         if self.alive:
             self.healthy = True  # Reset health status each step
 
-    def __repr__(self):
+    def _repr_(self):
         return (f"Law&Order: {self.LawAndOrder:.1f}, "
                 f"EconEquality: {self.EconomicEquality:.1f}, "
                 f"SocWelfare: {self.SocialWelfare:.1f}, "
                 f"Party: {self.party_affiliation}")
-    
