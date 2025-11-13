@@ -67,9 +67,9 @@ __pycache__/
 *$py.class
 
 # Output files
-# results/
-# *.csv
-# *.png
+results/
+*.csv
+*.png
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
