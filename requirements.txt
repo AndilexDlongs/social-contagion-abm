@@ -91,5 +91,3 @@ wcwidth==0.2.14
 websockets==15.0.1
 widgetsnbextension==4.0.14
 plotly==6.3.1
-matplotlib==3.8.4
-matplotlib-inline==0.1.7
