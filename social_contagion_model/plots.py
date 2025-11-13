@@ -99,18 +99,23 @@ def plot_belief_scatter_3d(env, save=False, stage="final", folder="results/plots
                    marker="^", s=200, edgecolors="k")
 
     ax.set(
-        xlabel="Law & Order",
-        ylabel="Economic Equality",
-        zlabel="Social Welfare",
+        xlabel="Law & Order", ylabel="Economic Equality", zlabel="Social Welfare", 
         title=f"Agents in 3D Belief Space ({stage.title()})"
     )
+
+    # Increase the font size of the axis labels and title
+    ax.xaxis.label.set_size(16)
+    ax.yaxis.label.set_size(16)
+    ax.zaxis.label.set_size(16)
+    ax.title.set_size(16)
 
     # Ensure the folder exists
     os.makedirs(folder, exist_ok=True)
 
     if save:
-        plt.savefig(f"{folder}/belief_scatter_3d_{stage.lower()}.png", dpi=300)
+        plt.savefig(f"{folder}/belief_scatter_3d_{stage.lower()}.png", dpi=300, bbox_inches="tight")
     plt.show()
+
 
 
 # --------------------------------------------------------------------

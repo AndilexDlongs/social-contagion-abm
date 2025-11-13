@@ -1,22 +1,36 @@
 import plotly.graph_objects as go
 import numpy as np
+import pandas as pd
 from mesa.visualization import SolaraViz, SpaceRenderer
 from model import Environment
 import matplotlib.pyplot as plt
 import solara
 from config import (
-    N_AGENTS, GRID_WIDTH, GRID_HEIGHT, STEPS,
+    N_AGENTS, GRID_WIDTH, GRID_HEIGHT,
     MAJORITY_PARTY, UND_RATIO,
     FAMILY_MULTIPLIER, HEALTHCARE_MULTIPLIER,
     WEALTH_INFLUENCE_FACTOR, INTERACTION_MULTIPLIER,
-    SUSC_PARTY_FOCUS, SUSC_FOCUS_VALUE, SUSC_OTHER_VALUE,
-    WEALTH_PARTY_FOCUS, WEALTH_FOCUS_VALUE, WEALTH_OTHER_VALUE,
     CONSERVATISM_PERC, SOCIALISM_PERC, LIBERALISM_PERC,
     CONSERVATISM_STD, SOCIALISM_STD, LIBERALISM_STD,
-    SICKNESS_CHANCE, MIN_FAMILY_SIZE, MAX_FAMILY_SIZE
+    SICKNESS_CHANCE, MIN_FAMILY_SIZE, MAX_FAMILY_SIZE,
+    CONSERVATISM_SUSC, SOCIALISM_SUSC, LIBERALISM_SUSC, 
+    CONSERVATISM_WEALTH, SOCIALISM_WEALTH, LIBERALISM_WEALTH 
 )
 from mesa.visualization.components import AgentPortrayalStyle
 
+import solara
+
+# @solara.component
+# def Page():
+#     with solara.Style("""
+#         :root {
+#             --md-sys-color-surface: #121212 !important;
+#             --md-sys-color-on-surface: #ffffff !important;
+#             --md-sys-color-primary: #2196f3 !important;
+#             --md-sys-color-secondary: #333333 !important;
+#         }
+#     """):
+#         solara.Text("Dark theme applied")
 
 # -------------------------------------------------
 # Colour maps
@@ -28,13 +42,31 @@ PARTY_COLOURS = {
     "Undecided": "gray"
 }
 
+# -------------------------------------------------
+# Display name map (for legend/labels only)
+# -------------------------------------------------
+DISPLAY_NAMES = {
+    "Conservatism": "Red",
+    "Socialism": "Blue",
+    "Liberalism": "Green",
+    "Undecided": "Undecided"
+}
 
-def agent_portrayal(agent):
-    """Visualize each agent in the 2D grid."""
-    color = PARTY_COLOURS.get(agent.party_affiliation, "black")
-    portrayal = AgentPortrayalStyle(color=color, marker="o", size=50)
-    return portrayal
 
+
+# def agent_portrayal(agent):
+#     """Visualize each agent in the 2D grid."""
+#     color = PARTY_COLOURS.get(agent.party_affiliation, "black")
+#     portrayal = AgentPortrayalStyle(color=color, marker="o", size=50)
+#     return portrayal
+
+def dynamic_agent_portrayal(agent):
+    """Always get the live colour from the agent's current party."""
+    return AgentPortrayalStyle(
+        color=PARTY_COLOURS.get(agent.party_affiliation, "black"),
+        marker="o",
+        size=50
+    )
 
 # -------------------------------------------------
 # Model setup
@@ -53,14 +85,14 @@ social_contagion = Environment(
         interaction_multiplier=INTERACTION_MULTIPLIER,
 
         # Susceptibility setup
-        susc_party_focus=SUSC_PARTY_FOCUS,
-        susc_focus_value=SUSC_FOCUS_VALUE,
-        susc_other_value=SUSC_OTHER_VALUE,
+        conservatism_susc=CONSERVATISM_SUSC, 
+        socialism_susc=SOCIALISM_SUSC,
+        liberalism_susc=LIBERALISM_SUSC,
 
         # Wealth setup
-        wealth_party_focus=WEALTH_PARTY_FOCUS,
-        wealth_focus_value=WEALTH_FOCUS_VALUE,
-        wealth_other_value=WEALTH_OTHER_VALUE,
+        conservatism_wealth=CONSERVATISM_WEALTH, 
+        socialism_wealth=SOCIALISM_WEALTH, 
+        liberalism_wealth=LIBERALISM_WEALTH,
 
         # Party distribution
         conservatism_perc=CONSERVATISM_PERC,
@@ -76,29 +108,23 @@ social_contagion = Environment(
         sickness_chance=SICKNESS_CHANCE,
         min_family_size=MIN_FAMILY_SIZE,
         max_family_size=MAX_FAMILY_SIZE
-)
-
-model_params = {
-    "n": {
-        "type": "SliderInt",
-        "value": N_AGENTS,
-        "label": "Number of agents:",
-        "min": 3,
-        "max": 50,
-        "step": 1,
-    },
-    "width": GRID_WIDTH,
-    "height": GRID_HEIGHT,
-     # "seeding_strategy": SEED_STRATEGY,
-    "undecided_ratio": UND_RATIO,
-    "majority_party": MAJORITY_PARTY,
-}
-
+    )
 
 renderer = SpaceRenderer(model=social_contagion, backend="matplotlib")
 renderer.draw_structure(lw=2, ls="solid", color="black", alpha=0.1)
-renderer.draw_agents(agent_portrayal)
+# renderer.draw_agents(agent_portrayal)
 
+renderer.draw_agents(dynamic_agent_portrayal)
+renderer.dynamic = True
+
+
+# def post_process(ax):
+#     """Customize the matplotlib axes after rendering."""
+#     ax.set_title("Social Contagion Model")
+#     ax.set_xlabel("x")
+#     ax.set_ylabel("y")
+#     ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.5)
+#     ax.set_aspect("equal", adjustable="box")
 
 def post_process(ax):
     """Customize the matplotlib axes after rendering."""
@@ -108,29 +134,12 @@ def post_process(ax):
     ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.5)
     ax.set_aspect("equal", adjustable="box")
 
+    # # 🔒 Keep the grid constant (fix axis limits)
+    # ax.set_xlim(0, GRID_WIDTH)
+    # ax.set_ylim(0, GRID_HEIGHT)
+
 
 renderer.post_process = post_process
-
-
-# -------------------------------------------------
-# Shared Solara reactive binding
-# -------------------------------------------------
-# def bind_solara_reactive(model):
-#     """Ensure the model has a reactive step counter for live updates."""
-#     if not hasattr(model, "_solara_reactive_step"):
-#         model._solara_reactive_step = solara.reactive(0)
-
-#         old_step = model.step
-
-#         def wrapped_step():
-#             old_step()
-#             model._solara_reactive_step.value += 1
-
-#         model.step = wrapped_step
-
-
-# # Bind before visualization setup
-# bind_solara_reactive(social_contagion)
 
 # -------------------------------------------------
 # Reactive binding for model.step
@@ -147,148 +156,21 @@ def bind_solara_reactive(model):
 
         def wrapped_step():
             old_step()
+            # Remove visuals for dead agents
+            # alive_agents = [a for a in model.agents if hasattr(a, "alive") and a.alive]
+            # model.agents = alive_agents  # Filter dead ones out (optional if schedule already cleaned)
+            
+            # 🔄 Force redraw of live agents only
+            renderer.clear()
+            renderer.draw_agents(dynamic_agent_portrayal)
+            
             model._solara_reactive_step.value += 1
+
 
         model.step = wrapped_step
 
 # Initially bind for the original model
 bind_solara_reactive(social_contagion)
-
-# -------------------------------------------------
-# Custom patch for reset in SolaraViz's controller
-# -------------------------------------------------
-# def patch_viz_reset(viz):
-#     """
-#     Monkey-patch the ModelController.do_reset inside SolaraViz so that
-#     after resetting the model it also resets our reactive counter.
-#     """
-#     # The SolaraViz component uses an internal ModelController
-#     # We can try to locate it via viz (the SolaraViz instance)
-#     # and wrap its do_reset.
-
-#     # Try to access the controller object ( Mesa’s code names it `controller` or similar)
-#     mc = None
-#     if hasattr(viz, "controller"):
-#         mc = getattr(viz, "controller")
-#     elif hasattr(viz, "model_controller"):
-#         mc = getattr(viz, "model_controller")
-#     else:
-#         # fallback: viz itself might implement do_reset
-#         mc = viz
-
-#     original_do_reset = getattr(mc, "do_reset", None)
-
-#     def new_do_reset():
-#         # First run the original logic to reinstantiate the model
-#         if original_do_reset is not None:
-#             original_do_reset()
-
-#         # After reset, the viz’s model is replaced. We need to re-bind reactive.
-#         # Access new model:
-#         m = None
-#         # The controller may store model in an attribute `model`
-#         if hasattr(mc, "model"):
-#             m = mc.model
-#         # Or viz might store model
-#         if hasattr(viz, "model"):
-#             m = viz.model
-
-#         # If it's a reactive wrapper, get .value
-#         if hasattr(m, "value"):
-#             m = m.value
-
-#         if m is not None:
-#             bind_solara_reactive(m)
-
-#     # Replace do_reset
-#     setattr(mc, "do_reset", new_do_reset)
-
-
-# -------------------------------------------------
-# Components
-# -------------------------------------------------
-# @solara.component
-# def PartyVotesLinePlot(model):
-#     """Live line plot of vote counts over time."""
-#     step = model._solara_reactive_step
-#     df = model.datacollector.get_model_vars_dataframe()
-
-#     if df.empty:
-#         fig, ax = plt.subplots(figsize=(6, 5))
-#         ax.set_title("Votes over Time")
-#         return solara.FigureMatplotlib(fig)
-
-#     fig, ax = plt.subplots(figsize=(6, 5))
-#     ax.plot(df.index, df["vote_Conservatism"], label="Conservatism", color="red")
-#     ax.plot(df.index, df["vote_Socialism"], label="Socialism", color="blue")
-#     ax.plot(df.index, df["vote_Liberalism"], label="Liberalism", color="green")
-#     ax.plot(df.index, df["vote_Undecided"], label="Undecided", color="gray")
-#     ax.set_xlabel("Step")
-#     ax.set_ylabel("Number of Agents")
-#     ax.set_title(f"Party Vote Counts Over Time (Step {step.value})")
-#     ax.legend()
-
-#     return solara.FigureMatplotlib(fig)
-
-# @solara.component
-# def PartyVotesLinePlot(model):
-
-#     if not hasattr(model, "_solara_reactive_step"):
-#         fig, ax = plt.subplots(figsize=(8, 6))
-#         ax.set_title(f"Initializing … at Step {model.step_count}")
-#         plt.close(fig)
-#         return solara.FigureMatplotlib(fig)
-
-    
-#     step = model._solara_reactive_step
-#     df = model.datacollector.get_model_vars_dataframe()
-
-#     fig, ax = plt.subplots(figsize=(8, 6))
-#     try:
-#         if df.empty:
-#             ax.set_title("Votes over Time")
-#         else:
-#             ax.plot(df.index, df["vote_Conservatism"], label="Conservatism", color="red")
-#             ax.plot(df.index, df["vote_Socialism"], label="Socialism", color="blue")
-#             ax.plot(df.index, df["vote_Liberalism"], label="Liberalism", color="green")
-#             ax.plot(df.index, df["vote_Undecided"], label="Undecided", color="gray")
-#             ax.set_xlabel("Step")
-#             ax.set_ylabel(f"Number of Agents {step.value}")
-#             ax.set_title(f"Party Vote Counts — Step {model.step_count}")
-#             ax.legend()
-#     finally:
-#         plt.close(fig)
-
-#     return solara.FigureMatplotlib(fig)
-
-# @solara.component
-# def PartyVotesLinePlot(model):
-#     # reactive trigger
-#     _ = model._solara_reactive_step  # ensure this component re-renders when step changes
-
-#     df = model.datacollector.get_model_vars_dataframe()
-#     if df.empty:
-#         fig, ax = plt.subplots(figsize=(6, 5))
-#         ax.set_title("Votes over Time (no data)")
-#         plt.close(fig)
-#         return solara.FigureMatplotlib(fig)
-
-#     # At this point, df has data and columns
-#     fig, ax = plt.subplots(figsize=(6, 5))
-#     try:
-#         ax.plot(df.index, df["vote_Conservatism"], label="Conservatism", color="red")
-#         ax.plot(df.index, df["vote_Socialism"], label="Socialism", color="blue")
-#         ax.plot(df.index, df["vote_Liberalism"], label="Liberalism", color="green")
-#         ax.plot(df.index, df["vote_Undecided"], label="Undecided", color="gray")
-#         ax.set_xlabel("Step")
-#         ax.set_ylabel("Number of Agents")
-#         ax.set_title(f"Party Vote Counts — Step {model.step_count}")
-#         ax.legend()
-#     finally:
-#         plt.close(fig)
-
-#     return solara.FigureMatplotlib(fig)
-
 
 @solara.component
 def Live3DBeliefScatter(model):
@@ -381,9 +263,9 @@ def PartyVotesLinePlot(model):
     # Now plot vote counts
     fig, ax = plt.subplots(figsize=(8, 6))
     try:
-        ax.plot(df.index, df["vote_Conservatism"], label="Conservatism", color="red")
-        ax.plot(df.index, df["vote_Socialism"], label="Socialism", color="blue")
-        ax.plot(df.index, df["vote_Liberalism"], label="Liberalism", color="green")
+        ax.plot(df.index, df["vote_Conservatism"], label="Red", color="red")
+        ax.plot(df.index, df["vote_Socialism"], label="Blue", color="blue")
+        ax.plot(df.index, df["vote_Liberalism"], label="Green", color="green")
         ax.plot(df.index, df["vote_Undecided"], label="Undecided", color="gray")
         ax.set_xlabel("Step")
         ax.set_ylabel(f"Number of Agents {step.value}")
@@ -415,7 +297,7 @@ def PartyCompositionPlot(model):
     df = model.datacollector.get_model_vars_dataframe()
     if df.empty:
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.set_title("Party Composition Over Time")
+        ax.set_title("Party Growth Over Time")
         plt.close(fig)
         return solara.FigureMatplotlib(fig)
 
@@ -440,12 +322,12 @@ def PartyCompositionPlot(model):
             df["Socialism%"],
             df["Liberalism%"],
             df["Undecided%"],
-            labels=["Conservatism", "Socialism", "Liberalism", "Undecided"],
+            labels=["Red", "Blue", "Green", "Undecided"],
             colors=["red", "blue", "green", "gray"],
             alpha=0.6,
         )
         ax.set_ylim(0, 100)
-        ax.set_title(f"Party Composition – Step {model.step_count}")
+        ax.set_title(f"Party Growth After {model.step_count} Steps")
         ax.set_xlabel("Step")
         ax.set_ylabel(f"% of Population {step.value}")
         ax.legend(loc="upper right")
@@ -497,10 +379,12 @@ def AvgDistancePerPartyPlot(model):
             if party_name == "Undecided":
                 continue  # skip Undecided
             if party_name in grouped.columns:
-                ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
+                ax.plot(grouped.index, grouped[party_name],
+                label=DISPLAY_NAMES.get(party_name, party_name),
+                color=colour)
         ax.set_xlabel("Step")
         ax.set_ylabel(f"Average Distance {step.value}")
-        ax.set_title(f"Average Distance per Party — Step {model.step_count}")
+        ax.set_title(f"Supporters Drift After {model.step_count} Steps")
         ax.legend(loc="upper right")
     finally:
         pass
@@ -543,10 +427,11 @@ def AvgSusceptibilityPerPartyPlot(model):
     try:
         for party_name, colour in PARTY_COLOURS.items():
             if party_name in grouped.columns:
-                ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
-        ax.set_xlabel("Step")
+                ax.plot(grouped.index, grouped[party_name],
+                label=DISPLAY_NAMES.get(party_name, party_name),
+                color=colour)
         ax.set_ylabel(f"Average Susceptibility {step.value}")
-        ax.set_title(f"Average Susceptibility per Party — Step {model.step_count}")
+        ax.set_title(f"Agents' Desire to Change Party After {model.step_count} Steps")
         ax.legend(loc="upper right")
     finally:
         pass
@@ -615,7 +500,8 @@ def SupportVsRebellionStackPlot(model):
 
 @solara.component
 def DistanceStdOnlyPlot(model):
-    """Plot only the standard deviation of distance per party over time."""
+    """Plot only the standard deviation of distance
+      per party over time."""
     # reactive trigger for re-render
     step = solara.use_reactive(0)
 
@@ -648,10 +534,12 @@ def DistanceStdOnlyPlot(model):
             if party_name == "Undecided":
                 continue  # skip Undecided
             if party_name in std_tbl.columns:
-                ax.plot(std_tbl.index, std_tbl[party_name], label=party_name, color=colour)
+                ax.plot(std_tbl.index, std_tbl[party_name],
+                        label=DISPLAY_NAMES.get(party_name, party_name),
+                        color=colour)
         ax.set_xlabel("Step")
         ax.set_ylabel(f"Standard Deviation of Distance {step.value}")
-        ax.set_title(f"Distance Std Dev per Party — Step {model.step_count}")
+        ax.set_title(f"Party Spread After {model.step_count} Steps")
         ax.legend(loc="upper right")
     finally:
         pass
@@ -680,7 +568,7 @@ def FractionOriginalPartyPlot(model):
     df_agents = model.datacollector.get_agent_vars_dataframe()
     if df_agents.empty:
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.set_title("Fraction original party (no data yet)")
+        ax.set_title("Fraction of Original Party Members (no data yet)")
         plt.close(fig)
         return solara.FigureMatplotlib(fig)
 
@@ -705,7 +593,10 @@ def FractionOriginalPartyPlot(model):
     try:
         for party_name, colour in PARTY_COLOURS.items():
             if party_name in frac.columns:
-                ax.plot(frac.index, frac[party_name] * 100, label=party_name, color=colour)
+                ax.plot(frac.index, frac[party_name] * 100,
+                        label=DISPLAY_NAMES.get(party_name, party_name),
+                        color=colour)
+
         ax.set_xlabel("Step")
         ax.set_ylabel(f"% still in original party {step.value}")
         ax.set_title(f"Fraction of Original Members — Step {model.step_count}")
@@ -804,25 +695,192 @@ def InteractionTypePlot(model):
     return solara.FigureMatplotlib(fig)
 
 
-# -------------------------------------------------
-# SolaraViz page
-# -------------------------------------------------
+@solara.component
+def PartyStatsTable(model):
+    """Live table showing vote counts, average wealth, and deaths per party."""
+    step = solara.use_reactive(0)
+
+    def tick_updater():
+        step.value += 1
+
+    # Bind reactivity to model.step
+    if not getattr(model, "_solara_bound_stats_table", False):
+        model._solara_bound_stats_table = True
+        old_step = model.step
+
+        def wrapped_step():
+            old_step()
+            tick_updater()
+        model.step = wrapped_step
+
+    # Access agent-level data
+    df_agents = model.datacollector.get_agent_vars_dataframe()
+    if df_agents.empty:
+        return solara.Text("No data yet — run the model for a few steps.")
+
+    df2 = df_agents.reset_index()
+    latest_step = df2["Step"].max()
+    current = df2[df2["Step"] == latest_step]
+
+    # --- Compute statistics ---
+    parties = ["Conservatism", "Socialism", "Liberalism"]
+    rows = []
+    for party in parties:
+        party_agents = current[current["party"] == party]
+        if len(party_agents) == 0:
+            votes = 0
+            avg_wealth = 0
+            deaths = 0
+        else:
+            votes = len(party_agents)
+            avg_wealth = party_agents["wealth"].mean()
+            deaths = len(party_agents[party_agents["alive"] == False]) if "alive" in party_agents else 0
+
+        rows.append({
+            "Party": party,
+            "Votes": int(votes),
+            "Avg Wealth": round(avg_wealth, 2) if not np.isnan(avg_wealth) else 0,
+            "Deaths": int(deaths),
+            "Step": step.value
+        })
+
+    df_summary = pd.DataFrame(rows)
+
+    return solara.DataFrame(df_summary)
+
+model_params = {
+    "n": { 
+        "type": "SliderInt", 
+        "value": N_AGENTS, 
+        "label": "Number of agents", 
+        "min": 50, 
+        "max": 1000,
+        "step": 1,
+    },
+    "width": {
+        "type": "SliderInt",
+        "value": GRID_WIDTH,
+        "label": "Grid Width",
+        "min": 30,
+        "max": 100,
+        "step": 1,
+    },
+    "height": {
+        "type": "SliderInt",
+        "value": GRID_HEIGHT,
+        "label": "Grid Height",
+        "min": 30,
+        "max": 100,
+        "step": 1,
+    },
+    "conservatism_perc": {
+        "type": "SliderFloat",
+        "value": CONSERVATISM_PERC,
+        "label": "Proportion of Red Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "socialism_perc": {
+        "type": "SliderFloat",
+        "value": SOCIALISM_PERC,
+        "label": "Proportion of Blue Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "liberalism_perc": {
+        "type": "SliderFloat",
+        "value": LIBERALISM_PERC,
+        "label": "Proportion of Green Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "conservatism_wealth": {
+        "type": "SliderFloat",
+        "value": CONSERVATISM_WEALTH,
+        "label": "Wealth class of Red Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "socialism_wealth": {
+        "type": "SliderFloat",
+        "value": SOCIALISM_WEALTH,
+        "label": "Wealth class of Blue Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "liberalism_wealth": {
+        "type": "SliderFloat",
+        "value": LIBERALISM_WEALTH,
+        "label": "Wealth class of Green Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "conservatism_susc": {
+        "type": "SliderFloat",
+        "value": CONSERVATISM_SUSC,
+        "label": "Proportion of stubborn Red Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "socialism_susc": {
+        "type": "SliderFloat",
+        "value": SOCIALISM_SUSC,
+        "label": "Proportion of stubborn Blue Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "liberalism_susc": {
+        "type": "SliderFloat",
+        "value": LIBERALISM_SUSC,
+        "label": "Proportion of stubborn Green Agents",
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.01,
+    },
+    "max_family_size": {
+        "type": "SliderInt",
+        "value": MAX_FAMILY_SIZE,
+        "label": "Largest family size",
+        "min": 3,
+        "max": 10,
+        "step": 1,
+    },
+    "sickness_chance": {
+        "type": "SliderFloat",
+        "value": SICKNESS_CHANCE,
+        "label": "Chances of falling sick",
+        "min": 0.01,
+        "max": 0.30,
+        "step": 0.01,
+    },
+    "undecided_ratio": UND_RATIO,
+    "majority_party": MAJORITY_PARTY,
+}
+
+# Keep your page definition exactly as it is
 page = SolaraViz(
     social_contagion,
     renderer,
     components=[
-        (PartyCompositionPlot,0),
-        (InteractionTypePlot,0),
-        (AvgDistancePerPartyPlot,1),
-        (DistanceStdOnlyPlot,1),
-        (SupportVsRebellionStackPlot,3),
-        (AvgSusceptibilityPerPartyPlot,2),
-        (FractionOriginalPartyPlot,2)
+        (PartyCompositionPlot, 0),
+        # (InteractionTypePlot, 3),
+        (AvgDistancePerPartyPlot, 1),
+        (DistanceStdOnlyPlot, 1),
+        # (SupportVsRebellionStackPlot, 3),
+        (AvgSusceptibilityPerPartyPlot, 2),
+        (FractionOriginalPartyPlot, 2),
     ],
     model_params=model_params,
     name="Social Contagion ABM",
 )
-
 
 if __name__ == "__main__":
     page

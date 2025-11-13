@@ -30,7 +30,7 @@ LIBERALISM_PERC = 0.4
 # Belief Spread (stddev for each party)
 # =======================
 CONSERVATISM_STD = 10
-SOCIALISM_STD = 10
+SOCIALISM_STD = 3
 LIBERALISM_STD = 10
 
 # =======================
@@ -42,15 +42,15 @@ MAX_FAMILY_SIZE = 3
 # =======================
 # Health and Wealth Factors
 # =======================
-SICKNESS_CHANCE = 0.01        # 5% chance of getting sick per step
+SICKNESS_CHANCE = 0.01        # 1% chance of getting sick per step
 
 # percentage of stubborn agents (low susceptibility)
 CONSERVATISM_SUSC = 0.5
-SOCIALISM_SUSC = 0.5
+SOCIALISM_SUSC = 0.95
 LIBERALISM_SUSC = 0.5
 
 CONSERVATISM_WEALTH = 0.5
-SOCIALISM_WEALTH = 0.5
+SOCIALISM_WEALTH = 0.9
 LIBERALISM_WEALTH = 0.5
 
 # =======================

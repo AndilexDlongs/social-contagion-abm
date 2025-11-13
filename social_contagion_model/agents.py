@@ -98,7 +98,7 @@ class FamilyAgent:
     @staticmethod
     def reflect(vec, lower=0, upper=100):
         """
-        Reflects values in vec back into range [lower, upper].
+        Reflects values in `vec` back into range [lower, upper].
         Works for scalars or NumPy arrays.
         """
         vec = np.asarray(vec, dtype=float)
@@ -129,7 +129,7 @@ class VoterAgent(CellAgent):
         self.distance = self.party_distance()
         self.low = np.random.uniform(0, 0.1)
         self.mid = np.random.uniform(0.3, 0.8)
-        self.high = np.random.uniform(1.2, 1.6)
+        self.high = np.random.uniform(1.6, 2)
         self.susceptibility = np.random.choice([self.low, self.high]) # np.random.uniform(0, 1) # low # 
         self.switched_this_step = False
         self.switched_in_support = False
@@ -321,7 +321,7 @@ class VoterAgent(CellAgent):
     @staticmethod
     def reflect(vec, lower=0, upper=100):
         """
-        Reflects values in vec back into range [lower, upper].
+        Reflects values in `vec` back into range [lower, upper].
         Works for scalars or NumPy arrays.
         """
         vec = np.asarray(vec, dtype=float)
@@ -810,8 +810,9 @@ class VoterAgent(CellAgent):
         if self.alive:
             self.healthy = True  # Reset health status each step
 
-    def _repr_(self):
+    def __repr__(self):
         return (f"Law&Order: {self.LawAndOrder:.1f}, "
                 f"EconEquality: {self.EconomicEquality:.1f}, "
                 f"SocWelfare: {self.SocialWelfare:.1f}, "
                 f"Party: {self.party_affiliation}")
+    
