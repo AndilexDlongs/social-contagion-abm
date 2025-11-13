@@ -45,16 +45,6 @@ def main():
         interaction_multiplier=INTERACTION_MULTIPLIER,
 
         # Susceptibility setup
-        # susc_party_focus=SUSC_PARTY_FOCUS,
-        # susc_focus_value=SUSC_FOCUS_VALUE,
-        # susc_other_value=SUSC_OTHER_VALUE,
-
-        # Wealth setup
-        # wealth_party_focus=WEALTH_PARTY_FOCUS,
-        # wealth_focus_value=WEALTH_FOCUS_VALUE,
-        # wealth_other_value=WEALTH_OTHER_VALUE,
-
-        # Susceptibility setup
         conservatism_susc=CONSERVATISM_SUSC, 
         socialism_susc=SOCIALISM_SUSC,
         liberalism_susc=LIBERALISM_SUSC,
