@@ -1,8 +1,8 @@
 
 import numpy as np
-from model import Environment
+from .model import Environment
 import json
-from config import (
+from .config import (
     N_AGENTS, GRID_WIDTH, GRID_HEIGHT, STEPS,
     MAJORITY_PARTY, UND_RATIO,
     FAMILY_MULTIPLIER, HEALTHCARE_MULTIPLIER,
@@ -14,7 +14,7 @@ from config import (
     CONSERVATISM_WEALTH, SOCIALISM_WEALTH, LIBERALISM_WEALTH 
 )
 import os
-from plots import (
+from .plots import (
     plot_initial_party_affiliations,
     plot_belief_scatter_2d,
     plot_belief_scatter_3d, 

@@ -1,11 +1,15 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 from mesa.visualization import SolaraViz, SpaceRenderer
-from model import Environment
+from mesa.visualization.components import AgentPortrayalStyle
+from social_contagion_model.model import Environment
 import matplotlib.pyplot as plt
 import solara
-from config import (
+from social_contagion_model.config import (
     N_AGENTS, GRID_WIDTH, GRID_HEIGHT,
     MAJORITY_PARTY, UND_RATIO,
     FAMILY_MULTIPLIER, HEALTHCARE_MULTIPLIER,
@@ -16,21 +20,6 @@ from config import (
     CONSERVATISM_SUSC, SOCIALISM_SUSC, LIBERALISM_SUSC, 
     CONSERVATISM_WEALTH, SOCIALISM_WEALTH, LIBERALISM_WEALTH 
 )
-from mesa.visualization.components import AgentPortrayalStyle
-
-import solara
-
-# @solara.component
-# def Page():
-#     with solara.Style("""
-#         :root {
-#             --md-sys-color-surface: #121212 !important;
-#             --md-sys-color-on-surface: #ffffff !important;
-#             --md-sys-color-primary: #2196f3 !important;
-#             --md-sys-color-secondary: #333333 !important;
-#         }
-#     """):
-#         solara.Text("Dark theme applied")
 
 # -------------------------------------------------
 # Colour maps
@@ -51,14 +40,6 @@ DISPLAY_NAMES = {
     "Liberalism": "Green",
     "Undecided": "Undecided"
 }
-
-
-
-# def agent_portrayal(agent):
-#     """Visualize each agent in the 2D grid."""
-#     color = PARTY_COLOURS.get(agent.party_affiliation, "black")
-#     portrayal = AgentPortrayalStyle(color=color, marker="o", size=50)
-#     return portrayal
 
 def dynamic_agent_portrayal(agent):
     """Always get the live colour from the agent's current party."""
@@ -117,15 +98,6 @@ renderer.draw_structure(lw=2, ls="solid", color="black", alpha=0.1)
 renderer.draw_agents(dynamic_agent_portrayal)
 renderer.dynamic = True
 
-
-# def post_process(ax):
-#     """Customize the matplotlib axes after rendering."""
-#     ax.set_title("Social Contagion Model")
-#     ax.set_xlabel("x")
-#     ax.set_ylabel("y")
-#     ax.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.5)
-#     ax.set_aspect("equal", adjustable="box")
-
 def post_process(ax):
     """Customize the matplotlib axes after rendering."""
     ax.set_title("Social Contagion Model")
@@ -156,11 +128,7 @@ def bind_solara_reactive(model):
 
         def wrapped_step():
             old_step()
-            # Remove visuals for dead agents
-            # alive_agents = [a for a in model.agents if hasattr(a, "alive") and a.alive]
-            # model.agents = alive_agents  # Filter dead ones out (optional if schedule already cleaned)
-            
-            # 🔄 Force redraw of live agents only
+            # Force redraw of live agents only
             renderer.clear()
             renderer.draw_agents(dynamic_agent_portrayal)
             
