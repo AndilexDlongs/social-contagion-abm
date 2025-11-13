@@ -3,11 +3,11 @@ import numpy as np
 from mesa.datacollection import DataCollector
 from mesa.discrete_space import OrthogonalMooreGrid
 
-from .Agents.voter import VoterAgent
-from .Agents.family import FamilyAgent
-from .Agents.party import Party
-from .seeder import Seeder
-from .utils import (
+from Agents.voter import VoterAgent
+from Agents.family import FamilyAgent
+from Agents.party import Party
+from seeder import Seeder
+from utils import (
     count_Conservatism, count_Liberalism, count_Socialism, 
     count_Undecided, count_in_support, num_interactions,
     num_switches, num_switches_in_rebellion, num_switches_in_support,
