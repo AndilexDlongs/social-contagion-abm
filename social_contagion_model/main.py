@@ -83,10 +83,6 @@ def main():
     plot_belief_scatter_2d(env, folder=f"{run_folder}/plots", save=True, stage="initial")
     plot_belief_scatter_3d(env, folder=f"{run_folder}/plots", save=True, stage="initial")
 
-    # display_df = env.datacollector.get_agent_vars_dataframe()
-    # avg_susc = display_df.groupby("party")["susceptibility"].mean()
-    # print("Average susceptibility:", avg_susc)
-
     # --- Simulation loop ---
     for step in range(STEPS):
         env.step()
@@ -114,15 +110,6 @@ def main():
 
     family_details = agent_df[["family_id", "family_members"]]
     family_details.to_csv(f"{run_folder}/csv/family_details.csv")
-    
-    # display_df2 = env.datacollector.get_agent_vars_dataframe()
-    # avg_susc_after = display_df2.groupby("party")["susceptibility"].mean()
-    # print("Average susceptibility after:", avg_susc_after)
-
-    # Calculate the average of 'num_switches_in_rebellion'
-    avg_rebellion_switches = model_views["num_switches_in_rebellion"].mean()
-
-    print("Average number of switches in rebellion:", avg_rebellion_switches)
 
     model_df.to_csv(f"{run_folder}/csv/full_model_data.csv")
     agent_df.to_csv(f"{run_folder}/csv/full_agent_data.csv")

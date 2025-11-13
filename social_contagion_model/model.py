@@ -287,8 +287,4 @@ class Environment(mesa.Model):
         self.death_count = 0  # reset death count after collection
         self.sickness_from_deaths = 0  # reset sickness from deaths after collection
         self.step_count += 1
-
-    # def media_campaign(self, bias):
-    #    """ Conduct a media campaign with a specific bias. """
-    #   self.agents.do("media_influence", bias)
         
