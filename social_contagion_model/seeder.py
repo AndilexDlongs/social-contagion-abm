@@ -45,7 +45,7 @@ class Seeder:
         num_undecided = int(num_agents * self.undecided_ratio)
         remaining = num_agents - num_undecided
 
-        # 1️⃣ Assign decided agents by party proportions
+        # Assign decided agents by party proportions
         for party in self.parties:
             party_name = party.name
             count = int(remaining * self.party_distribution.get(party_name, 0))
@@ -59,7 +59,7 @@ class Seeder:
                     "wealth": None
                 })
 
-        # 2️⃣ Assign undecideds
+        # Assign undecideds
         for _ in range(num_undecided):
             vec = np.random.uniform(0, 100, size=len(self.parties[0].center_vector()))
             distances = {p.name: np.linalg.norm(vec - p.center_vector()) for p in self.parties}
@@ -67,7 +67,7 @@ class Seeder:
             affiliation = closest_party if np.random.random() < 0.4 else "Undecided"
             out.append({"beliefs": vec, "affiliation": affiliation, "wealth": None})
 
-        # 3️⃣ Fill remainder if rounding errors left out some
+        # Fill remainder if rounding errors left out some
         while len(out) < num_agents:
             p = np.random.choice(self.parties)
             vec = p.center_vector() + np.random.normal(0, 10, size=len(p.center_vector()))

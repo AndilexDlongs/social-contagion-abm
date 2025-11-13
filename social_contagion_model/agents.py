@@ -395,31 +395,8 @@ class VoterAgent(CellAgent):
             new_other = other.belief_vector() + other.interaction_multiplier * other.susceptibility * (other.party_center() - other.belief_vector())
 
         return new_self, new_other
-
-
-    # overall susceptibilities might have to go lower for stubborn and higher for naive
-    #def choose_rule(self, other):
-    #    """Decide which interaction rule to apply based on susceptibility."""
-    #    if self.susceptibility > 0.3 and other.susceptibility > 0.3:
-    #        return "mutual"
-    #    elif self.susceptibility > 0.7 and other.susceptibility < 0.3:
-    #        return "otherconvince"
-    #    elif self.susceptibility < 0.3 and other.susceptibility > 0.7:
-    #        return "selfconvince"
-    #    else:
-    #        return "disagree"
     
     def choose_rule(self, other):
-        # """Decide which interaction rule to apply based on susceptibility."""
-        # if self.susceptibility > 0.55 and other.susceptibility < 0.45:
-        #    return "otherconvince"
-        # elif self.susceptibility < 0.45 and other.susceptibility > 0.55:
-        #    return "selfconvince"
-        # elif self.susceptibility > 0.05 and other.susceptibility > 0.05: # might have to be last
-        #    return "mutual"
-        # else:
-        #    return "disagree"
-
         self_susc = self.susceptibility 
         other_susc = other.susceptibility       
        # --- Both Low ---
@@ -479,10 +456,6 @@ class VoterAgent(CellAgent):
     "disagree": disagreement,
     }
 
-    # def media_influence(self, media_bias):
-    #    """ Influence from media. """
-    #    self.political_bias = self.political_bias + self.susceptibility * media_bias
-
     def policy_influence(self, other):
         
         ## making sure that when families interact, a ripple ##
@@ -507,9 +480,6 @@ class VoterAgent(CellAgent):
         other_old_party = other.party_affiliation
         self_old_party = self.party_affiliation
 
-        # Update beliefs (clamp between 0–100)
-        #self.update_from_vector(np.clip(new_self, 0, 100))
-        #other.update_from_vector(np.clip(new_other, 0, 100))
         self.update_from_vector(self.reflect(new_self))
         other.update_from_vector(self.reflect(new_other))
 
@@ -699,7 +669,6 @@ class VoterAgent(CellAgent):
         # give some wealth to other agent 
         if self.wealth > 1:
             other.wealth += 1 # might increase others satisfaction because they are getting wealth
-            # other.wealth_dissatisfaction -= 1
             self.wealth -= 1        
 
     # ---------------------------

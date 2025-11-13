@@ -204,8 +204,6 @@ def plot_distance_std(env, folder="results/plots", filename="distance_std.png"):
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
-        # if party_name == "Undecided":
-        #         continue  # skip Undecided
         if party_name in grouped.columns:
             ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
     ax.set_xlabel("Step")
@@ -231,8 +229,6 @@ def plot_avg_susceptibility(env, folder="results/plots", filename="avg_susceptib
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
-        # if party_name == "Undecided":
-        #         continue  # skip Undecided
         if party_name in grouped.columns:
             ax.plot(grouped.index, grouped[party_name], label=party_name, color=colour)
     ax.set_xlabel("Step")
@@ -298,8 +294,6 @@ def plot_fraction_original_party(env, folder="results/plots", filename="fraction
 
     fig, ax = plt.subplots(figsize=(8, 6))
     for party_name, colour in PARTY_COLOURS.items():
-        # if party_name == "Undecided":
-        #         continue  # skip Undecided
         if party_name in frac.columns:
             ax.plot(frac.index, frac[party_name] * 100, label=party_name, color=colour)
     ax.set_xlabel("Step")
